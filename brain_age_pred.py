@@ -301,49 +301,6 @@ def plot_scores(y_test, age_predicted, model, metrics,
 
     plt.show()
 
-def compare_prediction( y_test1, predict_y1, y_test2, predict_y2, model_name)
-):
-    """Compare prediction performances of the same model on two different dataset.
-
-    Parameters
-    ----------
-    y_test1 : array-like
-        Test feature from the first data set.
-    predict_y1 : array-like
-        Predicted feauture from the first data set.
-    y_test2 : array-like
-        Test feature from the second data set.
-    predict_y2 : type
-        Predicted feature from the second data set.
-    model_name : string-like
-        Name of the model used for prediction.
-    harmonize_option : string-like
-        Harmonization method applied on data set.
-
-    """
-    plt.figure(figsize=(8, 8))
-    plt.scatter(y_test1, predict_y1 - y_test1, alpha=0.5, c="b", label="dataset1")
-    plt.scatter(y_test2, predict_y2 - y_test2, alpha=0.5, c="g", label="dataset2")
-    plt.xlabel("Ground truth Age [years]", fontsize=18)
-    plt.ylabel("Delta Age [years]", fontsize=18)
-    plt.title(
-        "Delta Age versus Ground-truth  Age using \n \
-            {}  with {} ".format(
-            model_name,
-            harmonize_option,
-        ),
-        fontsize=20,
-    )
-    plt.tick_params(axis="x", which="major", labelsize=18)
-    plt.tick_params(axis="y", which="major", labelsize=18)
-    plt.legend(loc="upper right", fontsize=14)
-    plt.savefig(
-        "images/delta_pred_%s.png" % (model_name),
-        dpi=200,
-        format="png",
-    )
-
-
 def CRT_ASD_split(dataframe, harm_flag=False):
     """
     Utility function to split data into 3 datasets: CTR(control) train/test and
