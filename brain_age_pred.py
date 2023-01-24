@@ -275,7 +275,7 @@ def plot_scores(y_test, age_predicted, model, metrics,
         label="Prediction",
     )
     plt.title(f"Predicted vs real subject's age with"
-              f" {model_name} model",
+              f" \n{model_name} model",
               fontsize=20)
     plt.yticks(fontsize=18)
     plt.xticks(fontsize=18)
@@ -300,6 +300,61 @@ def plot_scores(y_test, age_predicted, model, metrics,
     )
 
     plt.show()
+
+def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
+    """
+    Computes the difference(delta) between predicted age find with a
+    specific model and true age on control test and cases dataframes.
+
+    Parametersdelta_age
+    ----------
+    true_age1 : array-like
+        Test feature from the first dataframe.
+
+    pred_age1 : array-like
+        Predicted feauture from the first dataframe.
+
+    true_age2 : array-like
+        Test feature from the second dataframe.
+
+    pred_age2 : array-like
+        Predicted feature from the second dataframe.
+
+    model_name : string-like
+        Name of the model used for prediction.
+
+    """
+    plt.figure(figsize=(8, 8))
+    plt.scatter(true_age1, pred_age1 - true_age1, c="b", label="Control")
+    plt.scatter(true_age2, pred_age2 - true_age2, alpha=0.5, c="g", label="ASD")
+
+    plt.axhline(
+        y=(pred_age1 - true_age1).mean(),
+        alpha=0.5,
+        color='r',
+        linestyle='-',
+        label=f"Δ CTR mean:{round((pred_age1 - true_age1).mean(),3)}",
+    )
+    plt.axhline(
+        y=(pred_age2 - true_age2).mean(),
+        alpha=0.5,
+        color='b',
+        linestyle='-',
+        label=f"Δ ASD mean:{round((pred_age2 - true_age2).mean(),3)}",
+    )
+    plt.xlabel("Ground truth Age [years]", fontsize=18)
+    plt.ylabel("Delta Age [years]", fontsize=18)
+    plt.title(
+        f"Delta age versus ground truth age with \n{model_name}",
+        fontsize=20,)
+    plt.tick_params(axis="x", labelsize=18)
+    plt.tick_params(axis="y", labelsize=18)
+    plt.legend(loc="upper right", fontsize=14)
+    plt.savefig(
+        "images/delta_pred_%s.png" % (model_name),
+        dpi=200,
+        format="png")
+
 
 def CRT_ASD_split(dataframe, harm_flag=False):
     """
@@ -366,16 +421,22 @@ df_list = [df_CTR_train, df_CTR_test, df_ASD]
 for model_name, model in models.items():
             model_hyp_tuner(df_CTR_train, model,
                             hyparams[model_name], model_name)
-
-for dataframe in df_list:
-            for model_name, model in models.items():
+pred = {}
+for model_name, model in models.items():
+            for dataframe in df_list:
                     age_predicted, true_age, metrics= make_predict(dataframe,
                                                                     model_name)
-                    pred{dataframe.attrs['name']]=[true_age, age_predicted]}
+                    pred[dataframe.attrs['name']]=[true_age, age_predicted]
                     plot_scores(true_age, age_predicted,
                                 model, metrics,
                                 model_name, dataframe.attrs['name'])
-
+            delta_age(
+                pred['df_CTR_test'][0],
+                pred['df_CTR_test'][1],
+                pred['ASD'][0],
+                pred['ASD'][1],
+                model_name
+            )
 
 stop = perf_counter()
 print(f"Elapsed time {stop-start}")
