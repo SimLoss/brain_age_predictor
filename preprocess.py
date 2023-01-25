@@ -12,16 +12,16 @@ It may be also used as a standalone program to explore the dataset.
 import os
 import logging
 import inspect
+import argparse
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy import stats
 import matplotlib
 import matplotlib.pyplot as plt
-import argparse
-from scipy import stats
 from neuroHarmonize import harmonizationLearn
-from sklearn.preprocessing import Normalizer
-from sklearn.preprocessing import StandardScaler
+
 
 def read_df(dataset_path):
     """
@@ -84,8 +84,7 @@ def data_info(dataframe):
     print(dataframe.tail(10))
 
     print("\n\nShowing statistical quantities for each column after scaling and normalization..")
-    scld_df = sck_scaler(dataframe)
-    norm_df = sck_norm(scld_df)
+    norm_df = normalization(dataframe)
     des = norm_df.describe()
     print(des)
 
@@ -128,26 +127,9 @@ def add_WhiteVol_feature(dataframe):
                 Dataframe to be passed to the function.
     """
 
+    #sum left and right hemisphere's white matter volume
     cols = ['lhCerebralWhiteMatterVol','rhCerebralWhiteMatterVol']
     dataframe['TotalWhiteVol'] = dataframe[cols].sum(axis=1)
-
-def del_FIQ(dataframe):
-    """
-    Delete FIQ column from the dataset.
-
-    Parameters
-    ----------
-    dataframe : pandas DataFrame
-                Input dataframe.
-
-    Returns
-    -------
-    dataframe : pandas DataFrame
-                Dataframe without FIQ column.
-
-    """
-    FIQ = dataframe.pop('FIQ')
-    return dataframe, FIQ
 
 def drop_confounders(dataframe):
     """
@@ -167,7 +149,7 @@ def drop_confounders(dataframe):
     drop_list : list
                 List of strings containing the name of the dropped columns.
     """
-    drop_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX"]
+    drop_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ"]
     dataframe = dataframe.drop(drop_list, axis=1)
 
     return dataframe, drop_list
@@ -201,13 +183,11 @@ def plot_histogram(dataframe, feature):
         plt.title(f"Histogram of n. subjects VS {feature}", fontsize=20)
         plt.show()
 
-    plt.savefig(
-    "data_plots/%s_histogram.png"
-    % (feature),
-    dpi=300,
-    format="png",
-    bbox_inches="tight"
-    )
+    plt.savefig("data_plots/%s_histogram.png"% (feature),
+                dpi=300,
+                format="png",
+                bbox_inches="tight"
+                )
 
 def plot_box(dataframe, feat_x, feat_y):
     """
@@ -234,13 +214,11 @@ def plot_box(dataframe, feat_x, feat_y):
                           fontsize=20, pad=20)
     sns_boxplot.grid()
 
-    plt.savefig(
-    "data_plots/%s_box plot.png"
-    % (dataframe.attrs['name']),
-    dpi=300,
-    format="png",
-    bbox_inches="tight"
-    )
+    plt.savefig("data_plots/%s_box plot.png"% (dataframe.attrs['name']),
+                dpi=300,
+                format="png",
+                bbox_inches="tight"
+                )
 
     plt.show()
 def remove_outl(dataframe, z_thresh=3):      # <-----DA MIGLIORARE
@@ -266,93 +244,46 @@ def remove_outl(dataframe, z_thresh=3):      # <-----DA MIGLIORARE
     dataframe.loc[:, 'TotalGrayVol'] = numerical_df.where(lim, np.nan)
     dataframe.dropna(inplace=True)
 
-def sck_scaler(dataframe):
-    """
-    Scales the dataframe entries to mean=0 and std dev=1 using z-score
-    for each column.
-
-    Parameters
-    ----------
-
-    dataframe : pandas DataFrame
-                Input dataframe to be scaled.
-    Returns
-    -------
-    norm_df : pandas DataFrame
-                Scaled dataframe.
-    """
-    scaler = StandardScaler()
-    dropped_df, drop_list = drop_confounders(dataframe)
-    scld_df = pd.DataFrame(scaler.fit_transform(dropped_df.values),
-                          columns = dropped_df.columns, index = dropped_df.index
-                          )
-    for column in drop_list:
-        scld_df[column] = dataframe[column].values
-
-    scld_df.attrs['name'] = "Unharmonized ABIDE dataframe"
-
-    return scld_df
-
-def sck_norm(dataframe):
-    """
-    Normalize the dataframe samples individually to unit norm.
-
-    Parameters
-    ----------
-
-    dataframe : pandas DataFrame
-                Input dataframe to be normalized.
-    Returns
-    -------
-    norm_df : pandas DataFrame
-                Normalized dataframe.
-    """
-    dropped_df, drop_list = drop_confounders(dataframe)
-    transformer = Normalizer()
-    norm_df = pd.DataFrame(transformer.fit_transform(dropped_df.values),
-                          columns = dropped_df.columns, index = dropped_df.index
-                          )
-    for column in drop_list:                      #putting the dropped column back together into the dataframe
-        norm_df[column] = dataframe[column].values
-    if dataframe.attrs['name'] ==  "Harmonized ABIDE":
-        norm_df.attrs['name'] = "Harmonized_Normalized ABIDE"
-    else:
-        norm_df.attrs['name'] = "Normalized ABIDE"
-
-    return norm_df
-
 def normalization(dataframe):
     """
-    Makes data normalization on brain surface, volume and average thickness.
+    Makes data normalization for exploration based on total brain surface, volume and average thickness.
+
 
     Parameters
     ----------
 
     dataframe : pandas DataFrame
                 Dataframe to be passed to the function.
+    Returns
+    -------
+    dataframe : pandas DataFrame
+                Normalized dataframe.
     """
-    #finding all the columns containing SurfArea as part of the name
+    #locate all brain's area surface columns
     surf_col = dataframe.loc[:, ["SurfArea" in i for i in dataframe.columns]]
-    #summing all the values to obtain the total surface
+    #calculate the total surface as sum of all the areas' surfaces
     tot_surf = surf_col.sum(axis=1)
-    #lastly, divide each surface value by the total surface
-    dataframe.loc[
-        :, ["SurfArea" in i for i in dataframe.columns]] = surf_col.divide(
-                                                            tot_surf, axis=0)
+    #divide each surface value by the total
+    dataframe.loc[:, ["SurfArea" in i for i in dataframe.columns]] = surf_col.divide(tot_surf, axis=0)
 
     vol_col = dataframe.loc[:, ["Vol" in i for i in dataframe.columns]]
+    #calculate total brain's volume summing gray and white matter values
     tot_vol = dataframe["TotalGrayVol"] + dataframe["TotalWhiteVol"]
-    dataframe.loc[
-        :, ["Vol" in i for i in dataframe.columns]] = vol_col.divide(
-                                                        tot_vol, axis=0)
-
-
+    dataframe.loc[:, ["Vol" in i for i in dataframe.columns]] = (vol_col
+            .divide(tot_vol, axis=0)
+            )
+    #Thickness
     thick_col = dataframe.loc[:, ["ThickAvg" in i for i in dataframe.columns]]
     tot_thick = dataframe["lh_MeanThickness"] + dataframe["rh_MeanThickness"]
-    dataframe.loc[
-        :, ["ThickAvg" in i for i in dataframe.columns]] = thick_col.divide(
-                                                            tot_thick, axis=0)
+    dataframe.loc[:, ["ThickAvg" in i for i in dataframe.columns]] = (thick_col
+            .divide(tot_thick, axis=0)
+            )
+    if dataframe.attrs['name'] ==  "Harmonized ABIDE":
+        dataframe.attrs['name'] = "Harmonized_Normalized ABIDE"
+    else:
+        dataframe.attrs['name'] = "Normalized ABIDE"
 
+    return dataframe
 def neuroharmonize(dataframe, covariate= 'SITE'):
     """
     Harmonize dataset using neuroHarmonize, a harmonization tools for
@@ -391,7 +322,7 @@ def neuroharmonize(dataframe, covariate= 'SITE'):
     df_neuro_harmonized = pd.DataFrame(array_neuro_harmonized, index=dataframe.index)
     df_neuro_harmonized.attrs['name'] = "Harmonized ABIDE"
     df_neuro_harmonized.columns = dropped_df.columns
-    
+
     for column in drop_list:
         df_neuro_harmonized[column] = dataframe[column].values
 
@@ -429,7 +360,7 @@ if __name__ == "__main__":
         "--boxplot",
         type= str,
         nargs=2,
-        help= "Draw a box plot to show distributions of a feature with respect of another.",
+        help= "Draw and save a box plot to show distributions of two specified feature (e. g. feat_x feat_y). ",
     )
     args = parser.parse_args()
 
@@ -439,7 +370,6 @@ if __name__ == "__main__":
         datapath = args.datapath
         dataframe = read_df(datapath)
 
-    dataframe = del_FIQ(dataframe)[0]
     add_WhiteVol_feature(dataframe)
 
     harmonize = input("Do you want to harmonize data? (yes/no): ")
@@ -448,7 +378,7 @@ if __name__ == "__main__":
 
     norm = input("Do you want to normalize data? (yes/no): ")
     if norm == "yes":
-        dataframe = sck_norm(dataframe)
+        dataframe = normalization(dataframe)
 
     if args.exploration:
         data_info(dataframe)

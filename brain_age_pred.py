@@ -1,5 +1,5 @@
 """
-This module provides functions to optimize the hyperparameters using GridSearchCV and compare them.
+This module provides functions to optimize the hyperparameters using GridSearchCV and compares them.
 Best estimators found are saved in local and used to makeprediction of age on a dataframe.
 
 Workflow:
@@ -24,19 +24,15 @@ import numpy as np
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Lasso
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, make_scorer
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_validate, train_test_split
+from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import Normalizer
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.feature_selection import f_regression, r_regression
 
 from preprocess import *
@@ -82,7 +78,8 @@ hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
           }
 
 def cv_kfold(x, y, model, n_splits, shuffle= False, verbose= False):
-    """Fit the model and make prediction using k-fold cross validation to split
+    """
+    Fit the model and make prediction using k-fold cross validation to split
     data in train/test sets. Returns the fitted model as well as the
     metrics mean values .
 
@@ -146,6 +143,8 @@ def cv_kfold(x, y, model, n_splits, shuffle= False, verbose= False):
 
 def model_hyp_tuner(dataframe, model, hyparams, model_name):
     """
+    Performs hyperparameters tuning (optimization) using GridSearchCV then fits
+    the best performing model on the training set in cross validation.
 
     Parameters
     ----------
@@ -165,7 +164,6 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name):
     pipe = Pipeline(
     steps=[
         ("Feature", SelectKBest()),
-        ("Normalizer", Normalizer(norm='max')),
         ("Scaler", StandardScaler()),
         ("Model", model)
         ]
@@ -401,10 +399,10 @@ def CRT_ASD_split(dataframe, harm_flag=False):
 datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
 #opening and setting the dataframe
 df = read_df(datapath)
+#removing subject with age<40 as they're poorly represented
+df = df[df.AGE_AT_SCAN<40]
 #adding total white matter Volume feature
 add_WhiteVol_feature(df)
-#removing IQ score from feature columns
-df = del_FIQ(df)[0]
 
 nharm = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
 harm_flag = False
