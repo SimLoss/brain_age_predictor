@@ -42,7 +42,7 @@ models = {
     "Linear_Regression": LinearRegression(),
     "Random_Forest_Regressor": RandomForestRegressor(),
     "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(max_iter=-1),
+#    "SVR": SVR(max_iter=-1),
     }
 #SCORING
 scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error']
@@ -141,7 +141,7 @@ def cv_kfold(x, y, model, n_splits, shuffle= False, verbose= False):
     print(f"PR:{np.mean(PR):.3f} \u00B1 {np.std(PR)}")
     return model, MSE, MAE, PR
 
-def model_hyp_tuner(dataframe, model, hyparams, model_name):
+def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag):
     """
     Performs hyperparameters tuning (optimization) using GridSearchCV then fits
     the best performing model on the training set in cross validation.
@@ -185,12 +185,17 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name):
     model_fit, MSE, MAE, PR = cv_kfold(x_train, y_train,
                                        model_cv.best_estimator_, 10
                                       )
+    if harm_flag == True:
+        saved_name = model_name + '_Harmonized'
+    else:
+        saved_name = model_name + '_Unharmonized'
+
     with open(
-        f'best_estimator/{model_name}.pkl', 'wb'
+        f'best_estimator/{saved_name}.pkl', 'wb'
     ) as file:
         pickle.dump(model_fit, file)
 
-def make_predict(dataframe, model_name):
+def make_predict(dataframe, model_name, harm_flag):
     """
 
     Parameters
@@ -198,8 +203,9 @@ def make_predict(dataframe, model_name):
 
     dataframe : pandas dataframe
                 Input dataframe to make predictions on.
+
     model_name : string
-                Name of the used model.
+                Name of the chosen model.
     Returns
    -------
     age_predicted:  array-like
@@ -212,8 +218,13 @@ def make_predict(dataframe, model_name):
                     Dictionary containing names of metrics as keys and result metrics
                     for a specific model as values.
     """
+    if harm_flag == True:
+        saved_name = model_name + '_Harmonized'
+    else:
+        saved_name = model_name + '_Unharmonized'
+
     with open(
-        "best_estimator/%s.pkl" % (model_name), "rb"
+        "best_estimator/%s.pkl" % (saved_name), "rb"
     ) as file:
         model_fit = pickle.load(file)
 
@@ -353,6 +364,7 @@ def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
         dpi=200,
         format="png")
 
+    plt.show()
 
 def CRT_ASD_split(dataframe, harm_flag=False):
     """
@@ -399,7 +411,7 @@ def CRT_ASD_split(dataframe, harm_flag=False):
 datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
 #opening and setting the dataframe
 df = read_df(datapath)
-#removing subject with age<40 as they're poorly represented
+#removing subject with age>40 as they're poorly represented
 df = df[df.AGE_AT_SCAN<40]
 #adding total white matter Volume feature
 add_WhiteVol_feature(df)
@@ -418,23 +430,32 @@ df_list = [df_CTR_train, df_CTR_test, df_ASD]
 
 for model_name, model in models.items():
             model_hyp_tuner(df_CTR_train, model,
-                            hyparams[model_name], model_name)
+                            hyparams[model_name], model_name, harm_flag)
 pred = {}
 for model_name, model in models.items():
             for dataframe in df_list:
                     age_predicted, true_age, metrics= make_predict(dataframe,
-                                                                    model_name)
+                                                                    model_name,
+                                                                    harm_flag)
                     pred[dataframe.attrs['name']]=[true_age, age_predicted]
                     plot_scores(true_age, age_predicted,
                                 model, metrics,
                                 model_name, dataframe.attrs['name'])
-            delta_age(
-                pred['df_CTR_test'][0],
-                pred['df_CTR_test'][1],
-                pred['ASD'][0],
-                pred['ASD'][1],
-                model_name
-            )
-
+            if harm_flag == True:
+                delta_age(
+                    pred['df_CTR_test_Harmonized'][0],
+                    pred['df_CTR_test_Harmonized'][1],
+                    pred['df_ASD_Harmonized'][0],
+                    pred['df_ASD_Harmonized'][1],
+                    model_name
+                    )
+            else:
+                delta_age(
+                    pred['df_CTR_test_Unharmonized'][0],
+                    pred['df_CTR_test_Unharmonized'][1],
+                    pred['df_ASD_Unharmonized'][0],
+                    pred['df_ASD_Unharmonized'][1],
+                    model_name
+                    )
 stop = perf_counter()
 print(f"Elapsed time {stop-start}")
