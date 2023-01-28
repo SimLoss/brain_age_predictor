@@ -379,44 +379,7 @@ def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
 
     plt.show()
 
-def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
-    """
-    Utility function to normalize dataframe using only transform
-    method from the scaler
 
-    Parameters
-    ----------
-
-    dataframe : pandas dataframe
-                Input dataframe to be normalized.
-    scaler : object-like
-             Scaler used to perform dataframe normalization with transform
-             method. Should be previously fitted on the train set and implement
-             a transform method.
-
-    harm_flag : boolean
-                Flag indicating if the dataframe has been previously harmonized.
-                DEFAULT=False.
-    dataframe_name : string
-    Returns
-
-    scaled_df : pandas dataframe
-            Normalized dataframe.
-    -------
-
-    """
-    drop_test, drop_list = drop_covars(dataframe)
-    scaled_df = pd.DataFrame(scaler.transform(drop_test))
-    scaled_df.columns = drop_test.columns
-    for column in drop_list:
-        scaled_df[column] = dataframe[column].values
-
-    if harm_flag == True:
-        scaled_df.attrs['name'] = f'{dataframe_name}_Harmonized'
-    else:
-        scaled_df.attrs['name'] = f'{dataframe_name}_Unharmonized'
-
-    return scaled_df
 
 ################################################# MAIN
 datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
