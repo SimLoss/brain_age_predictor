@@ -44,7 +44,7 @@ models = {
     "Linear_Regression": LinearRegression(),
     "Random_Forest_Regressor": RandomForestRegressor(),
     "KNeighborsRegressor": KNeighborsRegressor(),
-#    "SVR": SVR(),
+    #"SVR": SVR(),
     }
 #SCORING
 scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error']
@@ -168,7 +168,6 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag=False):
 
     pipe = Pipeline(
     steps=[
-        ("Scaler", StandardScaler()),
         ("Feature", SelectKBest()),
         ("Model", model)
         ]
@@ -442,13 +441,6 @@ CTR_train, CTR_test = train_test_split(CTR,
                                        test_size=0.3,
                                        random_state=42)
 
-start = perf_counter()
-for model_name, model in models.items():
-            model_hyp_tuner(df_CTR_train, model,
-                            hyparams[model_name], model_name, harm_flag)
-stop = perf_counter()
-print(f"Elapsed time for model tuning: {stop-start}")
-
 scaler = StandardScaler()
 #normalizing train set; using fit_transform.
 drop_train, drop_list = drop_covars(CTR_train)
@@ -469,6 +461,12 @@ else:
 df_CTR_test = test_scaler(CTR_test, scaler, harm_flag, "df_CTR_test")
 df_ASD = test_scaler(ASD, scaler, harm_flag, "df_ASD")
 
+start = perf_counter()
+for model_name, model in models.items():
+            model_hyp_tuner(df_CTR_train, model,
+                            hyparams[model_name], model_name, harm_flag)
+stop = perf_counter()
+print(f"Elapsed time for model tuning: {stop-start}")
 df_list = [df_CTR_train, df_CTR_test, df_ASD]
 pred = {}
 for model_name, model in models.items():
