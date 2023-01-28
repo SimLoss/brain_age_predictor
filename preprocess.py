@@ -20,6 +20,7 @@ import seaborn as sns
 from scipy import stats
 import matplotlib
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import RobustScaler, StandardScaler
 from neuroHarmonize import harmonizationLearn
 
 
@@ -49,7 +50,7 @@ def read_df(dataset_path):
         site = []
         ind = []
         for idx in df.FILE_ID:
-            ind.append(idx.split('_')[1])
+            ind.append(idx.split('_')[-1])
             site.append(idx.split('_')[0])
         #adding site column to dataframe and using FILE_ID as index
         df['SITE'] = site
@@ -131,10 +132,10 @@ def add_WhiteVol_feature(dataframe):
     cols = ['lhCerebralWhiteMatterVol','rhCerebralWhiteMatterVol']
     dataframe['TotalWhiteVol'] = dataframe[cols].sum(axis=1)
 
-def drop_confounders(dataframe):
+def drop_covars(dataframe):
     """
-    Drops the following columns with confounding variables and strings from
-    the dataframe: "SITE","AGE_AT_SCAN","DX_GROUP","SEX".
+    Drops the following columns with covariate and confounding variables from
+    the dataframe: "SITE","AGE_AT_SCAN","DX_GROUP","SEX". "FIQ".
 
     Parameters
     ----------
@@ -146,13 +147,13 @@ def drop_confounders(dataframe):
     -------
     dataframe : pandas Dataframe
                 Dataframe without the aforementioned columns.
-    drop_list : list
+    covar_list : list
                 List of strings containing the name of the dropped columns.
     """
-    drop_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ"]
-    dataframe = dataframe.drop(drop_list, axis=1)
+    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ"]
+    dataframe = dataframe.drop(covar_list, axis=1)
 
-    return dataframe, drop_list
+    return dataframe, covar_list
 
 def plot_histogram(dataframe, feature):
     """
@@ -237,7 +238,7 @@ def remove_outl(dataframe, z_thresh=3):      # <-----DA MIGLIORARE
                 Threshold for outliers in terms of number of sigma from mean.
 
     """
-    dropped_df, drop_list =  drop_confounders(dataframe)
+    dropped_df, covar_list =  drop_covars(dataframe)
     numerical_df = dataframe.loc[: ,'TotalGrayVol']
     lim = np.logical_and(numerical_df < numerical_df.quantile(0.99),
                         numerical_df > numerical_df.quantile(0.01))
@@ -284,7 +285,8 @@ def normalization(dataframe):
         dataframe.attrs['name'] = "Normalized ABIDE"
 
     return dataframe
-def neuroharmonize(dataframe, covariate= 'SITE'):
+
+def neuroharmonize(dataframe, covariate= ["SITE","AGE_AT_SCAN"]):
     """
     Harmonize dataset using neuroHarmonize, a harmonization tools for
     multi-site neuroimaging analysis. Workflow:
@@ -300,10 +302,12 @@ def neuroharmonize(dataframe, covariate= 'SITE'):
                 Must have a single column named 'SITE' with labels
                 that identifies sites.
 
-    covariate : string, default='SITE'
-                Contains covariates to control for during harmonization.
-                All covariates must be encoded numerically and
-                must contain a single column "SITE" with site labels for ComBat.
+    covariate : list, default=['AGE_AT_SCAN']
+                List of strings that contains covariates to control for
+                during harmonization.
+                All covariates must be encoded numerically (no categorical
+                variables) and must contain a single column "SITE" with
+                site labels.
 
     Returns
     -------
@@ -311,11 +315,11 @@ def neuroharmonize(dataframe, covariate= 'SITE'):
     df_neuro_harmonized: pandas DataFrame
                           Dataframe containing harmonized data.
     """
-    #firstly, drop the confounder/string column from the dataframe
-    dropped_df, drop_list = drop_confounders(dataframe)
+    #firstly, drop the covariate columns from the dataframe
+    dropped_df, covar_list = drop_covars(dataframe)
     df_array = np.array(dropped_df)
     #stating the covariates (here we're using just one)
-    covars = dataframe.loc[:,[covariate]]
+    covars = dataframe.loc[:,covariate]
 
     model, array_neuro_harmonized = harmonizationLearn(df_array, covars)
 
@@ -323,7 +327,7 @@ def neuroharmonize(dataframe, covariate= 'SITE'):
     df_neuro_harmonized.attrs['name'] = "Harmonized ABIDE"
     df_neuro_harmonized.columns = dropped_df.columns
 
-    for column in drop_list:
+    for column in covar_list:
         df_neuro_harmonized[column] = dataframe[column].values
 
     return df_neuro_harmonized

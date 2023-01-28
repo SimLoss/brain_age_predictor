@@ -10,7 +10,9 @@ Workflow:
     on CTR train set.
 5. K-fold cross validation of optimized models on CTR train set.
    Best models setting will be saved in "best estimator" folder.
-6. Best models are used to predict age on  CTR train and test set and on ASD dataset.
+6. Best models are used to predict age on CTR train and test set and, finally, on
+   ASD dataset for a comparison of prediction between healthy subjects and the
+   ones with ASD.
 
 For each dataset, all plots will be saved in "images" folder.
 """
@@ -42,7 +44,7 @@ models = {
     "Linear_Regression": LinearRegression(),
     "Random_Forest_Regressor": RandomForestRegressor(),
     "KNeighborsRegressor": KNeighborsRegressor(),
-#    "SVR": SVR(max_iter=-1),
+#    "SVR": SVR(),
     }
 #SCORING
 scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error']
@@ -62,7 +64,7 @@ hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
            "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
                                   "Feature__score_func": [f_regression],
                                   "Model__n_neighbors": [5, 10, 15],
-                                  "Model__weights": ['uniform','distance'],
+                                  "Model__weights": ['distance'],
                                   "Model__leaf_size": [20, 30, 50],
                                   "Model__p": [1,2],
 
@@ -141,7 +143,7 @@ def cv_kfold(x, y, model, n_splits, shuffle= False, verbose= False):
     print(f"PR:{np.mean(PR):.3f} \u00B1 {np.std(PR)}")
     return model, MSE, MAE, PR
 
-def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag):
+def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag=False):
     """
     Performs hyperparameters tuning (optimization) using GridSearchCV then fits
     the best performing model on the training set in cross validation.
@@ -158,13 +160,16 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag):
                 hyperparameters as value.
     model_name : string
                 Name of the used model.
+    harm_flag : boolean
+                Flag indicating if the dataframe has been previously harmonized.
+                DEFAULT=False.
     """
-    x_train, y_train = drop_confounders(dataframe)[0], dataframe['AGE_AT_SCAN']
+    x_train, y_train = drop_covars(dataframe)[0], dataframe['AGE_AT_SCAN']
 
     pipe = Pipeline(
     steps=[
-        ("Feature", SelectKBest()),
         ("Scaler", StandardScaler()),
+        ("Feature", SelectKBest()),
         ("Model", model)
         ]
     )
@@ -195,7 +200,7 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag):
     ) as file:
         pickle.dump(model_fit, file)
 
-def make_predict(dataframe, model_name, harm_flag):
+def make_predict(dataframe, model_name, harm_flag=False):
     """
 
     Parameters
@@ -206,6 +211,10 @@ def make_predict(dataframe, model_name, harm_flag):
 
     model_name : string
                 Name of the chosen model.
+
+    harm_flag : boolean
+                Flag indicating if the dataframe has been previously harmonized.
+                DEFAULT=False.
     Returns
    -------
     age_predicted:  array-like
@@ -228,7 +237,7 @@ def make_predict(dataframe, model_name, harm_flag):
     ) as file:
         model_fit = pickle.load(file)
 
-    x_test = drop_confounders(dataframe)[0]
+    x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
     age_predicted = model_fit.predict(x_test.values)
     score_metrics = {
@@ -256,15 +265,20 @@ def plot_scores(y_test, age_predicted, model, metrics,
 
     y_test : pandas dataframe
              Pandas dataframe column containing the ground truth age.
+
     age_predicted : array-like
                     Array containing the predicted age of each subject.
+
     model : function
             Regression model function.
+
     metrics : dictionary
             Dictionary containing names of metrics as keys and result metrics .
             for a specific model as values.
+
     model_name : string
                 Model's name, DEFAULT="Regressor Model"
+
     dataframe_name : string
                 Dataframe's name, DEFAULT="Dataset Metrics".
     """
@@ -366,48 +380,46 @@ def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
 
     plt.show()
 
-def CRT_ASD_split(dataframe, harm_flag=False):
+def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
     """
-    Utility function to split data into 3 datasets: CTR(control) train/test and
-    ASD(cases) dataset and assign them a name.
+    Utility function to normalize dataframe using only transform
+    method from the scaler
 
     Parameters
     ----------
 
     dataframe : pandas dataframe
-                Input dataframe to split.
+                Input dataframe to be normalized.
+    scaler : object-like
+             Scaler used to perform dataframe normalization with transform
+             method. Should be previously fitted on the train set and implement
+             a transform method.
 
     harm_flag : boolean
                 Flag indicating if the dataframe has been previously harmonized.
                 DEFAULT=False.
+    dataframe_name : string
     Returns
+
+    scaled_df : pandas dataframe
+            Normalized dataframe.
     -------
-    df_CTR_train : pandas dataframe
-                   Dataframe on which train will be performed.
-                   Contains only subjects categorized as CTR cases.
 
-    df_CTR_test : pandas dataframe
-                  Dataframe on which prediction test will be performed.
-                  Contains only subjects categorized as CTR cases.
-    df_ASD : pandas dataframe
-             Dataframe containing only subjects categorized as ASD cases.
     """
-    df_ASD, df_CTR = df_split(dataframe)
-    df_CTR_train, df_CTR_test = train_test_split(df_CTR,
-                                                 test_size=0.3,
-                                                 random_state=42)
+    drop_test, drop_list = drop_covars(dataframe)
+    scaled_df = pd.DataFrame(scaler.transform(drop_test))
+    scaled_df.columns = drop_test.columns
+    for column in drop_list:
+        scaled_df[column] = dataframe[column].values
+
     if harm_flag == True:
-        df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
-        df_CTR_test.attrs['name'] = 'df_CTR_test_Harmonized'
-        df_ASD.attrs['name'] = 'df_ASD_Harmonized'
+        scaled_df.attrs['name'] = f'{dataframe_name}_Harmonized'
     else:
-        df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
-        df_CTR_test.attrs['name'] = 'df_CTR_test_Unharmonized'
-        df_ASD.attrs['name'] = 'df_ASD_Unharmonized'
+        scaled_df.attrs['name'] = f'{dataframe_name}_Unharmonized'
 
-    return df_CTR_train, df_CTR_test, df_ASD
+    return scaled_df
 
-#################################################MAIN
+################################################# MAIN
 datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
 #opening and setting the dataframe
 df = read_df(datapath)
@@ -416,21 +428,48 @@ df = df[df.AGE_AT_SCAN<40]
 #adding total white matter Volume feature
 add_WhiteVol_feature(df)
 
-nharm = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
-harm_flag = False
-if nharm == "yes":
+harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
+#harm_flag = False
+if harm_flag == "yes":
 #harmonizing data by provenance site
     df = neuroharmonize(df)
     harm_flag = True
 
+#splitting the dataset into ASD and CTR groups.
+ASD, CTR = df_split(df)
+#split CTR dataset into train and test.
+CTR_train, CTR_test = train_test_split(CTR,
+                                       test_size=0.3,
+                                       random_state=42)
+
 start = perf_counter()
-
-df_CTR_train, df_CTR_test, df_ASD = CRT_ASD_split(df, harm_flag)
-df_list = [df_CTR_train, df_CTR_test, df_ASD]
-
 for model_name, model in models.items():
             model_hyp_tuner(df_CTR_train, model,
                             hyparams[model_name], model_name, harm_flag)
+stop = perf_counter()
+print(f"Elapsed time for model tuning: {stop-start}")
+
+scaler = StandardScaler()
+#normalizing train set; using fit_transform.
+drop_train, drop_list = drop_covars(CTR_train)
+df_CTR_train = pd.DataFrame(scaler.fit_transform(drop_train),
+                      columns = drop_train.columns, index = drop_train.index
+                      )
+for column in drop_list:
+    df_CTR_train[column] = CTR_train[column].values
+
+if harm_flag == True:
+    df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
+else:
+    df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+
+#Once the train set has been normalized,
+#scaling will be performed on the other datasets.
+#Only the scaler transform will be performed to avoid data leakage.
+df_CTR_test = test_scaler(CTR_test, scaler, harm_flag, "df_CTR_test")
+df_ASD = test_scaler(ASD, scaler, harm_flag, "df_ASD")
+
+df_list = [df_CTR_train, df_CTR_test, df_ASD]
 pred = {}
 for model_name, model in models.items():
             for dataframe in df_list:
@@ -457,5 +496,3 @@ for model_name, model in models.items():
                     pred['df_ASD_Unharmonized'][1],
                     model_name
                     )
-stop = perf_counter()
-print(f"Elapsed time {stop-start}")
