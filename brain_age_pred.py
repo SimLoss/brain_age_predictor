@@ -44,7 +44,7 @@ models = {
     "Linear_Regression": LinearRegression(),
     "Random_Forest_Regressor": RandomForestRegressor(),
     "KNeighborsRegressor": KNeighborsRegressor(),
-    #"SVR": SVR(),
+    "SVR": SVR(),
     }
 #SCORING
 scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error']
@@ -125,7 +125,9 @@ def cv_kfold(x, y, model, n_splits, shuffle= False, verbose= False):
     MSE = np.array([])
     MAE = np.array([])
     PR = np.array([])
+
     cv = KFold(n_splits, shuffle= shuffle)
+
     for train_index, test_index in cv.split(x):
         model_fit = model.fit(x[train_index], y[train_index])
         predict_y = model_fit.predict(x[test_index])
@@ -141,6 +143,7 @@ def cv_kfold(x, y, model, n_splits, shuffle= False, verbose= False):
     print(f"MSE:{np.mean(MSE):.3f} \u00B1 {np.std(MSE)} [years^2]")
     print(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE)} [years]")
     print(f"PR:{np.mean(PR):.3f} \u00B1 {np.std(PR)}")
+
     return model, MSE, MAE, PR
 
 def model_hyp_tuner(dataframe, model, hyparams, model_name, harm_flag=False):
@@ -253,7 +256,7 @@ def make_predict(dataframe, model_name, harm_flag=False):
     return age_predicted, y_test, score_metrics
 
 
-def plot_scores(y_test, age_predicted, model, metrics,
+def plot_scores(y_test, age_predicted, metrics,
                 model_name="Regressor model", dataframe_name="Dataset metrics"):
     """
     Plots the results of the predictions vs ground truth with related metrics
@@ -267,9 +270,6 @@ def plot_scores(y_test, age_predicted, model, metrics,
 
     age_predicted : array-like
                     Array containing the predicted age of each subject.
-
-    model : function
-            Regression model function.
 
     metrics : dictionary
             Dictionary containing names of metrics as keys and result metrics .
@@ -382,78 +382,85 @@ def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
 
 
 ################################################# MAIN
-datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
-#opening and setting the dataframe
-df = read_df(datapath)
-#removing subject with age>40 as they're poorly represented
-df = df[df.AGE_AT_SCAN<40]
-#adding total white matter Volume feature
-add_WhiteVol_feature(df)
+if __name__ == "__main__":
+    datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
+    #opening and setting the dataframe
+    df = read_df(datapath)
+    #removing subject with age>40 as they're poorly represented
+    df = df[df.AGE_AT_SCAN<40]
+    #adding total white matter Volume feature
+    add_WhiteVol_feature(df)
 
-harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
-#harm_flag = False
-if harm_flag == "yes":
-#harmonizing data by provenance site
-    df = neuroharmonize(df)
-    harm_flag = True
+    harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
+    if harm_flag == "yes":
+    #harmonizing data by provenance site
+        df = neuroharmonize(df)
+        harm_flag = True
 
-#splitting the dataset into ASD and CTR groups.
-ASD, CTR = df_split(df)
-#split CTR dataset into train and test.
-CTR_train, CTR_test = train_test_split(CTR,
-                                       test_size=0.3,
-                                       random_state=42)
+    #splitting the dataset into ASD and CTR groups.
+    ASD, CTR = df_split(df)
+    #split CTR dataset into train and test.
+    CTR_train, CTR_test = train_test_split(CTR,
+                                           test_size=0.3,
+                                           random_state=42)
 
-scaler = StandardScaler()
-#normalizing train set; using fit_transform.
-drop_train, drop_list = drop_covars(CTR_train)
-df_CTR_train = pd.DataFrame(scaler.fit_transform(drop_train),
-                      columns = drop_train.columns, index = drop_train.index
-                      )
-for column in drop_list:
-    df_CTR_train[column] = CTR_train[column].values
+    scaler = StandardScaler()
+    #normalizing train set; using fit_transform.
+    drop_train, drop_list = drop_covars(CTR_train)
+    df_CTR_train = pd.DataFrame(scaler.fit_transform(drop_train),
+                          columns = drop_train.columns, index = drop_train.index
+                          )
 
-if harm_flag == True:
-    df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
-else:
-    df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+    for column in drop_list:
+        df_CTR_train[column] = CTR_train[column].values
 
-#Once the train set has been normalized,
-#scaling will be performed on the other datasets.
-#Only the scaler transform will be performed to avoid data leakage.
-df_CTR_test = test_scaler(CTR_test, scaler, harm_flag, "df_CTR_test")
-df_ASD = test_scaler(ASD, scaler, harm_flag, "df_ASD")
+    if harm_flag == True:
+        df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
+        scaler_name = f'{scaler.__class__.__name__}_Harmonized'
+    else:
+        df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+        scaler_name = f'{scaler.__class__.__name__}_Unharmonized'
+    #saving for testing variability
+    with open(
+        f'best_estimator/scaler/{scaler_name}.pkl', 'wb'
+    ) as file:
+        pickle.dump(scaler, file)
 
-start = perf_counter()
-for model_name, model in models.items():
-            model_hyp_tuner(df_CTR_train, model,
-                            hyparams[model_name], model_name, harm_flag)
-stop = perf_counter()
-print(f"Elapsed time for model tuning: {stop-start}")
-df_list = [df_CTR_train, df_CTR_test, df_ASD]
-pred = {}
-for model_name, model in models.items():
-            for dataframe in df_list:
-                    age_predicted, true_age, metrics= make_predict(dataframe,
-                                                                    model_name,
-                                                                    harm_flag)
-                    pred[dataframe.attrs['name']]=[true_age, age_predicted]
-                    plot_scores(true_age, age_predicted,
-                                model, metrics,
-                                model_name, dataframe.attrs['name'])
-            if harm_flag == True:
-                delta_age(
-                    pred['df_CTR_test_Harmonized'][0],
-                    pred['df_CTR_test_Harmonized'][1],
-                    pred['df_ASD_Harmonized'][0],
-                    pred['df_ASD_Harmonized'][1],
-                    model_name
-                    )
-            else:
-                delta_age(
-                    pred['df_CTR_test_Unharmonized'][0],
-                    pred['df_CTR_test_Unharmonized'][1],
-                    pred['df_ASD_Unharmonized'][0],
-                    pred['df_ASD_Unharmonized'][1],
-                    model_name
-                    )
+    #Once the train set has been normalized,
+    #scaling will be performed on the other datasets.
+    #Only the scaler transform will be performed to avoid data leakage.
+    df_CTR_test = test_scaler(CTR_test, scaler, harm_flag, "df_CTR_test")
+    df_ASD = test_scaler(ASD, scaler, harm_flag, "df_ASD")
+
+    start = perf_counter()
+    for model_name, model in models.items():
+                model_hyp_tuner(df_CTR_train, model,
+                                hyparams[model_name], model_name, harm_flag)
+    stop = perf_counter()
+    print(f"Elapsed time for model tuning: {stop-start}")
+    df_list = [df_CTR_train, df_CTR_test, df_ASD]
+    pred = {}
+    for model_name in models.keys():
+                for dataframe in df_list:
+                        age_predicted, true_age, metrics= make_predict(dataframe,
+                                                                        model_name,
+                                                                        harm_flag)
+                        pred[dataframe.attrs['name']]=[true_age, age_predicted]
+                        plot_scores(true_age, age_predicted,
+                                    metrics, model_name, dataframe.attrs['name'])
+                if harm_flag == True:
+                    delta_age(
+                        pred['df_CTR_test_Harmonized'][0],
+                        pred['df_CTR_test_Harmonized'][1],
+                        pred['df_ASD_Harmonized'][0],
+                        pred['df_ASD_Harmonized'][1],
+                        model_name
+                        )
+                else:
+                    delta_age(
+                        pred['df_CTR_test_Unharmonized'][0],
+                        pred['df_CTR_test_Unharmonized'][1],
+                        pred['df_ASD_Unharmonized'][0],
+                        pred['df_ASD_Unharmonized'][1],
+                        model_name
+                        )
