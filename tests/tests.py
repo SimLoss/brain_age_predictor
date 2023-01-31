@@ -4,11 +4,9 @@ import os
 import sys
 
 
-#sys.path.insert(0, str(Path(os.getcwd()).parent)) # Get the absolute path to the parent dir.
-#package_name = "../microcal_classifier/"
-#sys.path.insert(0, package_name)
+
 #to run locally
-#package_name = "../BrainAge"
+#package_name = "../brain_age_predictor"
 package_name = "../brain_age_predictor"
 
 sys.path.insert(0, package_name)
