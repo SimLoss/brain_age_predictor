@@ -23,7 +23,7 @@ from prettytable import PrettyTable
 
 from preprocess import read_df,add_WhiteVol_feature, neuroharmonize, df_split, test_scaler
 from brain_age_pred import make_predict, plot_scores
-import multiprocessing as mp
+import threading
 
 #MODELS
 models = {
@@ -87,9 +87,24 @@ for model_name in models.keys():
                 age_predicted, true_age, metrics= make_predict(dataframe,
                                                                 model_name,
                                                                 harm_flag)
-                MAE.append(metrics['MAE'])
-                MSE.append(metrics['MSE'])
-                PR.append(metrics['PR'])
+
+                appender = lambda metric, key: metric.append(metrics[key])
+
+                mae = threading.Thread(target=appender, name='MAE'
+                                       , args=(MAE, 'MAE'))
+                mse = threading.Thread(target=appender, name='MSE',
+                                       args=(MSE, 'MSE'))
+                pr = threading.Thread(target=appender, name='PR',
+                                      args=(PR, 'PR'))
+
+                mae.start()
+                mse.start()
+                pr.start()
+
+                mae.join()
+                mse.join()
+                pr.join()
+
                 mean_s = np.mean(MAE)
                 std_s = np.std(MAE)
                 #if verbose, plots the fit on each dataframe
