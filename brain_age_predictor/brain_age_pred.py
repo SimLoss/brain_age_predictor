@@ -54,9 +54,8 @@ models = {
     #"XGBRegressor": XGBRegressor(objective='reg:squarederror'),
     #"KNeighborsRegressor": KNeighborsRegressor(),
     #"SVR": SVR(),
+    #"MLP_Regressor": MLP_Regressor(),
     }
-#SCORING
-scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error']
 
 #HYPERPARAMETER'S GRID
 hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
@@ -176,12 +175,13 @@ def cv_kfold(dataframe, n_splits, model, model_name,
         saved_name = model_name + '_Harmonized'
     else:
         saved_name = model_name + '_Unharmonized'
-
-    with open(
-        f'best_estimator/{saved_name}.pkl', 'wb'
-    ) as file:
-        pickle.dump(model_fit, file)
-
+    try:
+        with open(
+            f'best_estimator/{saved_name}.pkl', 'wb'
+        ) as file:
+            pickle.dump(model_fit, file)
+    except IOError:
+        print("Folder \'/best_estimator\' not found.")
 def model_hyp_tuner(dataframe, model, hyper_grid, model_name):
     """
     Makes a pipeline for k-best feature selection to use while running
@@ -271,11 +271,13 @@ def make_predict(dataframe, model_name, harm_flag=False):
         saved_name = model_name + '_Harmonized'
     else:
         saved_name = model_name + '_Unharmonized'
-
-    with open(
-        f"best_estimator/{saved_name}.pkl", "rb"
-    ) as file:
-        model_fit = pickle.load(file)
+    try:
+        with open(
+            f"best_estimator/{saved_name}.pkl", "rb"
+        ) as file:
+            model_fit = pickle.load(file)
+    except FileNotFoundError:
+        print("No such file found. Please, run brain_age_pred.py module first to create some fitted models.")
 
     x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
