@@ -21,10 +21,15 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import *
 from prettytable import PrettyTable
 
-from preprocess import read_df,add_WhiteVol_feature, neuroharmonize, df_split, test_scaler
+from preprocess import (read_df,
+                        drop_covars,
+                        add_WhiteVol_feature, 
+                        neuroharmonize,
+                        df_split,
+                        test_scaler)
 from brain_age_pred import make_predict, plot_scores
 import threading
-
+##################################################
 #MODELS
 models = {
     "Linear_Regression": LinearRegression(),
@@ -32,8 +37,6 @@ models = {
     "KNeighborsRegressor": KNeighborsRegressor(),
     "SVR": SVR(),
     }
-
-
 ##################################### PREPROCESSING
 datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
 #opening and setting the dataframe
