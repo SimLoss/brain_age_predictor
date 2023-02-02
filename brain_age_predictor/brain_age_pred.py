@@ -1,3 +1,5 @@
+# pylint: disable=locally-disabled, line-too-long, too-many-arguments, too-many-locals
+#pylint: disable=C0103
 """
 This module provides functions to optimize the hyperparameters using GridSearchCV and compares them.
 Best estimators found are saved in local and used to makeprediction of age on a dataframe.
@@ -17,8 +19,6 @@ Workflow:
 For each dataset, all plots will be saved in "images" folder.
 """
 
-import os
-import warnings
 import pickle
 from time import perf_counter
 
@@ -28,17 +28,17 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, mean_absolute_error, make_scorer
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate, train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler, StandardScaler
-from sklearn.feature_selection import f_regression, r_regression
-from denseweight import DenseWeight
+from sklearn.feature_selection import f_regression
+from xgboost import XGBRegressor
 
 from preprocess import (read_df,
                         add_WhiteVol_feature,
@@ -50,10 +50,10 @@ from preprocess import (read_df,
 #MODELS
 models = {
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(),
-    "XGBRegressor": XGBRegressor(objective='reg:squarederror'),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
+    #"Random_Forest_Regressor": RandomForestRegressor(),
+    #"XGBRegressor": XGBRegressor(objective='reg:squarederror'),
+    #"KNeighborsRegressor": KNeighborsRegressor(),
+    #"SVR": SVR(),
     }
 #SCORING
 scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error']
@@ -133,13 +133,13 @@ def cv_kfold(dataframe, n_splits, model, model_name,
     except AttributeError:
         pass
 
-    MSE_train = np.array([])
-    MAE_train = np.array([])
-    PR_train = np.array([])
+    mse_train = np.array([])
+    mae_train = np.array([])
+    pr_train = np.array([])
 
-    MSE_val = np.array([])
-    MAE_val = np.array([])
-    PR_val = np.array([])
+    mse_val = np.array([])
+    mae_val = np.array([])
+    pr_val = np.array([])
 
     cv = KFold(n_splits, shuffle= shuffle)
 
@@ -149,31 +149,31 @@ def cv_kfold(dataframe, n_splits, model, model_name,
         predict_y_train = model_fit.predict(x[train_index])
         predict_y_val = model_fit.predict(x[val_index])
 
-        MSE_train = np.append(MSE_train, mean_squared_error(y[train_index], predict_y_train))
-        MAE_train = np.append(MAE_train, mean_absolute_error(y[train_index], predict_y_train))
-        PR_train = np.append(PR_train, pearsonr(y[train_index], predict_y_train)[0])
+        mse_train = np.append(mse_train, mean_squared_error(y[train_index], predict_y_train))
+        mae_train = np.append(mae_train, mean_absolute_error(y[train_index], predict_y_train))
+        pr_train = np.append(pr_train, pearsonr(y[train_index], predict_y_train)[0])
 
-        MSE_val = np.append(MSE_val, mean_squared_error(y[val_index], predict_y_val))
-        MAE_val = np.append(MAE_val, mean_absolute_error(y[val_index], predict_y_val))
-        PR_val = np.append(PR_val, pearsonr(y[val_index], predict_y_val)[0])
+        mse_val = np.append(mse_val, mean_squared_error(y[val_index], predict_y_val))
+        mae_val = np.append(mae_val, mean_absolute_error(y[val_index], predict_y_val))
+        pr_val = np.append(pr_val, pearsonr(y[val_index], predict_y_val)[0])
 
     #Print the model's parameters after cross validation.
     if verbose:
         print("Model parameters:", model.get_params())
 
-    print(f"\nCross-Validation: metrics scores (mean values) on validation set:")
-    print(f"MSE:{np.mean(MSE_val):.3f} \u00B1 {np.around(np.std(MSE_val), 3)} [years^2]")
-    print(f"MAE:{np.mean(MAE_val):.3f} \u00B1 {np.around(np.std(MAE_val), 3)} [years]")
-    print(f"PR:{np.mean(PR_val):.3f} \u00B1 {np.around(np.std(PR_val), 3)}")
+    print("\nCross-Validation: metrics scores (mean values) on validation set:")
+    print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
+    print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
+    print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
 
-    print(f"\nCross-Validation: metrics scores (mean values) on train set:")
-    print(f"MSE:{np.mean(MSE_train):.3f} \u00B1 {np.around(np.std(MSE_train), 3)} [years^2]")
-    print(f"MAE:{np.mean(MAE_train):.3f} \u00B1 {np.around(np.std(MAE_train), 3)} [years]")
-    print(f"PR:{np.mean(PR_train):.3f} \u00B1 {np.around(np.std(PR_train), 3)}")
+    print("\nCross-Validation: metrics scores (mean values) on train set:")
+    print(f"MSE:{np.mean(mse_train):.3f} \u00B1 {np.around(np.std(mse_train), 3)} [years^2]")
+    print(f"MAE:{np.mean(mae_train):.3f} \u00B1 {np.around(np.std(mae_train), 3)} [years]")
+    print(f"PR:{np.mean(pr_train):.3f} \u00B1 {np.around(np.std(pr_train), 3)}")
 
     #saving results on disk folder "../best_estimator"
-    if harm_flag == True:
-            saved_name = model_name + '_Harmonized'
+    if harm_flag is True:
+        saved_name = model_name + '_Harmonized'
     else:
         saved_name = model_name + '_Unharmonized'
 
@@ -182,10 +182,13 @@ def cv_kfold(dataframe, n_splits, model, model_name,
     ) as file:
         pickle.dump(model_fit, file)
 
-def model_hyp_tuner(dataframe, model, hyparams, model_name):
+def model_hyp_tuner(dataframe, model, hyper_grid, model_name):
     """
-    Performs hyperparameters tuning (optimization) using GridSearchCV then fits
-    the best performing model on the training set in cross validation.
+    Makes a pipeline for k-best feature selection to use while running
+    hyperparameters'tuning (optimization) using GridSearchCV.
+
+    It makes use of the hyperparameter's grid dictionary in which, for each
+    chosen model, are specified the values on which the GSCV will be performed.
 
     Parameters
     ----------
@@ -196,7 +199,7 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name):
     model : function
             Regression model function.
 
-    hyparams : dictionary-like
+    hyper_grid : dictionary-like
                 Dictionary containing model's name as key and a list of
                 hyperparameters as value.
     model_name : string
@@ -223,7 +226,7 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name):
         pipe,
         cv=10,
         n_jobs=-1,
-        param_grid=hyparams,
+        param_grid= hyper_grid,
         scoring="neg_mean_absolute_error",
         verbose = 1
     )
@@ -237,6 +240,8 @@ def model_hyp_tuner(dataframe, model, hyparams, model_name):
 
 def make_predict(dataframe, model_name, harm_flag=False):
     """
+    Loads pre-trained model to make prediction on "unseen" test datas.
+    Stores the score metrics of a prediction.
 
     Parameters
     ----------
@@ -262,13 +267,13 @@ def make_predict(dataframe, model_name, harm_flag=False):
                     Dictionary containing names of metrics as keys and result metrics
                     for a specific model as values.
     """
-    if harm_flag == True:
+    if harm_flag is True:
         saved_name = model_name + '_Harmonized'
     else:
         saved_name = model_name + '_Unharmonized'
 
     with open(
-        "best_estimator/%s.pkl" % (saved_name), "rb"
+        f"best_estimator/{saved_name}.pkl", "rb"
     ) as file:
         model_fit = pickle.load(file)
 
@@ -315,9 +320,9 @@ def plot_scores(y_test, age_predicted, metrics,
     dataframe_name : string
                 Dataframe's name, DEFAULT="Dataset Metrics".
     """
-    MSE, MAE, PR = metrics["MSE"], metrics["MAE"], metrics["PR"]
+    mse, mae, pr = metrics["MSE"], metrics["MAE"], metrics["PR"]
 
-    fig, ax = plt.subplots(figsize=(8, 8))
+    ax = plt.subplots(figsize=(8, 8))[1]
     ax.scatter(y_test, age_predicted,
                marker="*", c="r",
                label="True age"
@@ -337,9 +342,9 @@ def plot_scores(y_test, age_predicted, metrics,
     plt.xticks(fontsize=18)
     plt.legend(loc="upper right", fontsize=14)
     anchored_text = AnchoredText(f"{dataframe_name} metrics:"
-                                 f"\nMAE= {MAE} [years]"
-                                 f"\n MSE= {MSE} [years^2]"
-                                 f"\n PR= {PR}",
+                                 f"\nMAE= {mae} [years]"
+                                 f"\n MSE= {mse} [years^2]"
+                                 f"\n PR= {pr}",
                                  loc=4,
                                  borderpad=0.,
                                  frameon=True,
@@ -348,8 +353,7 @@ def plot_scores(y_test, age_predicted, metrics,
     ax.add_artist(anchored_text)
 
     plt.savefig(
-        "images/%s_%s.png"
-        % (dataframe_name, model_name),
+        f"images/{dataframe_name}_{model_name}.png",
         dpi=200,
         format="png",
         bbox_inches="tight",
@@ -357,12 +361,16 @@ def plot_scores(y_test, age_predicted, metrics,
 
     plt.show()
 
-def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
+def delta_age(true_age1,
+                pred_age1,
+                true_age2,
+                pred_age2,
+                model_name):
     """
     Computes the difference(delta) between predicted age find with a
-    specific model and true age on control test and cases dataframes.
+    specific model and true age on control test and ASD dataframes.
 
-    Parametersdelta_age
+    Parameters
     ----------
     true_age1 : array-like
         Test feature from the first dataframe.
@@ -407,7 +415,7 @@ def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
     plt.tick_params(axis="y", labelsize=18)
     plt.legend(loc="upper right", fontsize=14)
     plt.savefig(
-        "images/delta_pred_%s.png" % (model_name),
+        "images/delta_pred_{model_name}.png",
         dpi=200,
         format="png")
 
@@ -415,9 +423,10 @@ def delta_age( true_age1, pred_age1, true_age2, pred_age2, model_name):
 
 ################################################# MAIN
 if __name__ == '__main__':
-    datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
+
+    DATAPATH='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
     #opening and setting the dataframe
-    df = read_df(datapath)
+    df = read_df(DATAPATH)
 
     #removing subject with age>40 as they're poorly represented
     df = df[df.AGE_AT_SCAN<40]
@@ -425,12 +434,11 @@ if __name__ == '__main__':
     #adding total white matter Volume feature
     add_WhiteVol_feature(df)
 
-    harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
-    #harm_flag = False
-    if harm_flag == "yes":
+    nh_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
+    if nh_flag == "yes":
     #harmonizing data by provenance site
         df = neuroharmonize(df)
-        harm_flag = True
+        nh_flag = True
 
     #splitting the dataset into ASD and CTR groups.
     ASD, CTR = df_split(df)
@@ -448,7 +456,7 @@ if __name__ == '__main__':
     for column in drop_list:
         df_CTR_train[column] = CTR_train[column].values
 
-    if harm_flag == True:
+    if nh_flag is True:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
     else:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
@@ -456,22 +464,22 @@ if __name__ == '__main__':
     #Once the train set has been normalized,
     #scaling will be performed on the other datasets.
     #Only the scaler transform will be performed to avoid data leakage.
-    df_CTR_test = test_scaler(CTR_test, scaler, harm_flag, "df_CTR_test")
-    df_ASD = test_scaler(ASD, scaler, harm_flag, "df_ASD")
+    df_CTR_test = test_scaler(CTR_test, scaler, nh_flag, "df_CTR_test")
+    df_ASD = test_scaler(ASD, scaler, nh_flag, "df_ASD")
 
     #Performing GridSearchCV on each model followed by CV
     start = perf_counter()
-    for model_name, model in models.items():
-                best_estimator =model_hyp_tuner(df_CTR_train, model,
-                                                hyparams[model_name],
-                                                model_name)
+    for name_regressor, regressor in models.items():
+        best_hyp_estimator = model_hyp_tuner(df_CTR_train, regressor,
+                                                hyparams[name_regressor],
+                                                name_regressor)
 
-                #now that the model is tuned, CV will be performed
-                cv_kfold(df_CTR_train,
-                        10,
-                        best_estimator,
-                        model_name,
-                        harm_flag)
+        #now that the model is tuned, CV will be performed
+        cv_kfold(df_CTR_train,
+                10,
+                best_hyp_estimator,
+                name_regressor,
+                nh_flag)
 
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")
@@ -479,30 +487,29 @@ if __name__ == '__main__':
     df_list = [df_CTR_train, df_CTR_test, df_ASD]
     #computing predictions with fitted models then plotting results
     pred = {}
-    for model_name, model in models.items():
+    for name_regressor in models:
+        for dframe in df_list:
+            predicted_age, true_age, metrics_score= make_predict(dframe,
+                                                            name_regressor,
+                                                            nh_flag)
 
-                for dataframe in df_list:
-                        age_predicted, true_age, metrics= make_predict(dataframe,
-                                                                        model_name,
-                                                                        harm_flag)
+            pred[dframe.attrs['name']]=[true_age, predicted_age]
+            plot_scores(true_age, predicted_age, metrics_score,
+                        name_regressor, dframe.attrs['name'])
 
-                        pred[dataframe.attrs['name']]=[true_age, age_predicted]
-                        plot_scores(true_age, age_predicted, metrics,
-                                    model_name, dataframe.attrs['name'])
-
-                if harm_flag == True:
-                    delta_age(
-                        pred['df_CTR_test_Harmonized'][0],
-                        pred['df_CTR_test_Harmonized'][1],
-                        pred['df_ASD_Harmonized'][0],
-                        pred['df_ASD_Harmonized'][1],
-                        model_name
-                        )
-                else:
-                    delta_age(
-                        pred['df_CTR_test_Unharmonized'][0],
-                        pred['df_CTR_test_Unharmonized'][1],
-                        pred['df_ASD_Unharmonized'][0],
-                        pred['df_ASD_Unharmonized'][1],
-                        model_name
-                        )
+        if nh_flag is True:
+            delta_age(
+                pred['df_CTR_test_Harmonized'][0],
+                pred['df_CTR_test_Harmonized'][1],
+                pred['df_ASD_Harmonized'][0],
+                pred['df_ASD_Harmonized'][1],
+                name_regressor
+                )
+        else:
+            delta_age(
+                pred['df_CTR_test_Unharmonized'][0],
+                pred['df_CTR_test_Unharmonized'][1],
+                pred['df_ASD_Unharmonized'][0],
+                pred['df_ASD_Unharmonized'][1],
+                name_regressor
+                    )
