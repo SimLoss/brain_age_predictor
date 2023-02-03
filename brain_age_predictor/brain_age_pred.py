@@ -18,7 +18,7 @@ Workflow:
 
 For each dataset, all plots will be saved in "images" folder.
 """
-
+import os
 import pickle
 from time import perf_counter
 
@@ -27,11 +27,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import pearsonr
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, SGDRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.neighbors import KNeighborsRegressor
 from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV, KFold
@@ -46,12 +45,16 @@ from preprocess import (read_df,
                         df_split,
                         test_scaler,
                         drop_covars)
+from MLPRegressor import MLP_Regressor
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 ###############################################
 #MODELS
 models = {
     "Linear_Regression": LinearRegression(),
-    #"Random_Forest_Regressor": RandomForestRegressor(),
-    #"XGBRegressor": XGBRegressor(objective='reg:squarederror'),
+    "SGDRegressor": SGDRegressor(),
+    "Random_Forest_Regressor": RandomForestRegressor(),
     #"KNeighborsRegressor": KNeighborsRegressor(),
     #"SVR": SVR(),
     #"MLP_Regressor": MLP_Regressor(),
@@ -61,6 +64,12 @@ models = {
 hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
                                   "Feature__score_func": [f_regression],
                                 },
+            "SGDRegressor":{"Feature__k": [10, 20, 30],
+                          "Feature__score_func": [f_regression],
+                          "Model__loss": ["squared_error","epsilon_insensitive"],
+                          "Model__learning_rate": ["constant","optimal","invscaling"]
+                          ""
+                                },
             "Random_Forest_Regressor":{"Feature__k": [10, 20, 30],
                                   "Feature__score_func": [f_regression],
                                   "Model__n_estimators": [10, 100, 300],
@@ -68,13 +77,7 @@ hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
                                   "Model__max_depth": [3, 4, 5, 6],
                                   "Model__random_state": [42],
                                       },
-            "XGBRegressor":{"Feature__k": [10, 20, 30],
-                                  "Feature__score_func": [f_regression],
-                                  "Model__n_estimators": [10, 50, 100],
-                                  "Model__max_depth": [3, 6, 9],
-                                  "Model__learning_rate": [0.05, 0.1, 0.20],
-                                  "Model__min_child_weight": [1, 10, 100],
-                                       },
+
            "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
                                   "Feature__score_func": [f_regression],
                                   "Model__n_neighbors": [5, 10, 15],
@@ -89,7 +92,12 @@ hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
                   "Model__degree" : [3,8],
                   "Model__coef0" : [0.01,10,0.5],
                   "Model__gamma" : ('auto','scale'),
-                 },
+                  },
+
+           "MLP_Regressor": {"Feature__k": [ 64, 128, "all"],
+                                "Feature__score_func": [f_regression],
+                                "Model__epochs": [50, 100],
+                                "Model__drop_rate": [0.2, 0.3],}
            }
 ###########################################
 def cv_kfold(dataframe, n_splits, model, model_name,
@@ -141,9 +149,11 @@ def cv_kfold(dataframe, n_splits, model, model_name,
     pr_val = np.array([])
 
     cv = KFold(n_splits, shuffle= shuffle)
-
+    rob_scaler = RobustScaler()
     #cross-validation
     for train_index, val_index in cv.split(x):
+        rob_scaler.fit_transform(x[train_index])
+        rob_scaler.transform(x[val_index])
         model_fit = model.fit(x[train_index], y[train_index])
         predict_y_train = model_fit.predict(x[train_index])
         predict_y_val = model_fit.predict(x[val_index])
@@ -216,6 +226,7 @@ def model_hyp_tuner(dataframe, model, hyper_grid, model_name):
     pipe = Pipeline(
     steps=[
         ("Feature", SelectKBest()),
+        ("Scaler", RobustScaler()),
         ("Model", model)
         ]
     )
@@ -282,6 +293,7 @@ def make_predict(dataframe, model_name, harm_flag=False):
     x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
     age_predicted = model_fit.predict(x_test.values)
+    age_predicted = np.squeeze(age_predicted)
     score_metrics = {
                     "MSE": round(mean_squared_error(y_test,
                                                     age_predicted),
@@ -449,7 +461,7 @@ if __name__ == '__main__':
                                            test_size=0.3,
                                            random_state=42)
 
-    scaler = StandardScaler()
+    scaler = RobustScaler()
     #normalizing train set; using fit_transform.
     drop_train, drop_list = drop_covars(CTR_train)
     df_CTR_train = pd.DataFrame(scaler.fit_transform(drop_train),
@@ -460,8 +472,10 @@ if __name__ == '__main__':
 
     if nh_flag is True:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
+
     else:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+
 
     #Once the train set has been normalized,
     #scaling will be performed on the other datasets.
