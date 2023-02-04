@@ -1,9 +1,5 @@
 """
 Module testing the reproducibility of the results on each site's dataframe.
-It works with previously trained models and fitted scaler(from sklearn.preprocessing).
-When asked, one must specify whether the scaler has been fitted on harmonized
-data or not by adding  '_Harmonize' or '_Unharmonized' to scaler's name.
-Custom scaler should be imported manually.
 The analysis will be performed on control subjects.
 
 """
@@ -13,17 +9,18 @@ import pickle
 from time import perf_counter
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.offsetbox import AnchoredText
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import *
+from sklearn.preprocessing import RobustScaler, StandardScaler
 from prettytable import PrettyTable
 
 from preprocess import (read_df,
                         drop_covars,
-                        add_WhiteVol_feature, 
+                        add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
                         test_scaler)
@@ -37,7 +34,7 @@ models = {
     "KNeighborsRegressor": KNeighborsRegressor(),
     "SVR": SVR(),
     }
-##################################### PREPROCESSING
+##################################### MAIN
 datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
 #opening and setting the dataframe
 df_ABIDE = read_df(datapath)
@@ -47,8 +44,7 @@ df_ABIDE = df_ABIDE[df_ABIDE.AGE_AT_SCAN<40]
 
 #adding total white matter Volume feature
 add_WhiteVol_feature(df_ABIDE)
-
-harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
+harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize?  (yes/no)")
 if harm_flag == "yes":
 #harmonizing data by provenance site
     df_ABIDE = neuroharmonize(df_ABIDE)
@@ -60,24 +56,22 @@ else:
 #splitting data in ASD and CTR dataframe, taking only
 #the latter for further analysis.
 df_ASD, df_CTR = df_split(df_ABIDE)
-
-##################################### MAIN
-
-#loading a pre-trained scaler. Must be coherent with
-#the one chosen during train.
-scaler_name = input("A pre-fitted scaler will be used for normalize data. Please, enter the name of a valid scaler(e.g : StandardScaler, RobustScaler, etc)")
-with open( f"best_estimator/scaler/{scaler_name}.pkl", "rb") as file:
-    scaler = pickle.load(file)
-df = test_scaler(df_CTR, scaler, harm_flag)
+#scaling dataset
+scaler = StandardScaler()
+drop_CTR, drop_list = drop_covars(df_CTR)
+scaled_df = pd.DataFrame(scaler.fit_transform(drop_CTR))
+scaled_df.columns = drop_CTR.columns
+for column in drop_list:
+    scaled_df[column] = df_CTR[column].values
 
 #creating a list of datas' provenance site.
-site_list = df.SITE.unique()
+site_list = scaled_df.SITE.unique()
 #
 #initializing and filling a dictionary that will contain
 #each different dataframe based on site.
 df_dict = {}
 for site in site_list:
-    df_dict[site] = df[df.SITE == f'{site}']
+    df_dict[site] = scaled_df[scaled_df.SITE == f'{site}']
     df_dict[site].attrs['name'] = f'{site}'
 
 verbose = input("Do you want to display plot for each site?(yes/no)")

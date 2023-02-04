@@ -33,7 +33,7 @@ from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.feature_selection import f_regression
@@ -44,8 +44,8 @@ from preprocess import (read_df,
                         neuroharmonize,
                         df_split,
                         test_scaler,
-                        drop_covars)
-from MLPRegressor import MLP_Regressor
+                        drop_covars,
+                       add_age_class)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -57,7 +57,6 @@ models = {
     "Random_Forest_Regressor": RandomForestRegressor(),
     #"KNeighborsRegressor": KNeighborsRegressor(),
     #"SVR": SVR(),
-    #"MLP_Regressor": MLP_Regressor(),
     }
 
 #HYPERPARAMETER'S GRID
@@ -68,7 +67,6 @@ hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
                           "Feature__score_func": [f_regression],
                           "Model__loss": ["squared_error","epsilon_insensitive"],
                           "Model__learning_rate": ["constant","optimal","invscaling"]
-                          ""
                                 },
             "Random_Forest_Regressor":{"Feature__k": [10, 20, 30],
                                   "Feature__score_func": [f_regression],
@@ -93,20 +91,18 @@ hyparams = {"Linear_Regression":{"Feature__k": [10, 20, 30],
                   "Model__coef0" : [0.01,10,0.5],
                   "Model__gamma" : ('auto','scale'),
                   },
-
-           "MLP_Regressor": {"Feature__k": [ 64, 128, "all"],
-                                "Feature__score_func": [f_regression],
-                                "Model__epochs": [50, 100],
-                                "Model__drop_rate": [0.2, 0.3],}
            }
 ###########################################
-def cv_kfold(dataframe, n_splits, model, model_name,
-            harm_flag= False, shuffle= False, verbose= False):
+def stf_kfold(dataframe, n_splits, model, model_name,
+            harm_flag= False, shuffle= True, verbose= False):
     """
-    Fit the model and make prediction using k-fold cross validation to split
-    data in train/validation sets. Returns the fitted model as well as the
-    metrics mean values .
-
+    Fit the model and make prediction using stratified k-fold
+    cross-validation to split data in train/validation sets.
+    This cross-validation object is a variation of KFold
+    that returns stratified folds. The folds are made by preserving
+    the percentage of samples for each class specified in "AGE_CLASS"
+    column.
+    
     Parameters
     ----------
     dataframe : pandas dataframe
@@ -133,10 +129,11 @@ def cv_kfold(dataframe, n_splits, model, model_name,
         cross validation.
     """
     x, y = drop_covars(dataframe)[0], dataframe['AGE_AT_SCAN']
-
+    y_class = dataframe['AGE_CLASS']
     try:
         x = x.to_numpy()
         y = y.to_numpy()
+        y_class = y_class.to_numpy()
     except AttributeError:
         pass
 
@@ -148,14 +145,15 @@ def cv_kfold(dataframe, n_splits, model, model_name,
     mae_val = np.array([])
     pr_val = np.array([])
 
-    cv = KFold(n_splits, shuffle= shuffle)
+    cv = StratifiedKFold(n_splits, shuffle= shuffle)
     rob_scaler = RobustScaler()
     #cross-validation
-    for train_index, val_index in cv.split(x):
+    for train_index, val_index in cv.split(x, y_class):
         rob_scaler.fit_transform(x[train_index])
         rob_scaler.transform(x[val_index])
         model_fit = model.fit(x[train_index], y[train_index])
         predict_y_train = model_fit.predict(x[train_index])
+        y[val_index] = np.squeeze(y[val_index])
         predict_y_val = model_fit.predict(x[val_index])
 
         mse_train = np.append(mse_train, mean_squared_error(y[train_index], predict_y_train))
@@ -192,6 +190,7 @@ def cv_kfold(dataframe, n_splits, model, model_name,
             pickle.dump(model_fit, file)
     except IOError:
         print("Folder \'/best_estimator\' not found.")
+
 def model_hyp_tuner(dataframe, model, hyper_grid, model_name):
     """
     Makes a pipeline for k-best feature selection to use while running
@@ -447,6 +446,7 @@ if __name__ == '__main__':
 
     #adding total white matter Volume feature
     add_WhiteVol_feature(df)
+    add_age_class(df, bins=10)
 
     nh_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize? (yes/no)")
     if nh_flag == "yes":
@@ -490,12 +490,13 @@ if __name__ == '__main__':
                                                 hyparams[name_regressor],
                                                 name_regressor)
 
-        #now that the model is tuned, CV will be performed
-        cv_kfold(df_CTR_train,
-                10,
-                best_hyp_estimator,
-                name_regressor,
-                nh_flag)
+        #now that the model is tuned, stratified-CV will be performed
+        stf_kfold(df_CTR_train,
+                  10,
+                  best_hyp_estimator,
+                  name_regressor,
+                  nh_flag,
+                 )
 
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")

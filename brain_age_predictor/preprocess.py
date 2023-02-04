@@ -132,10 +132,29 @@ def add_WhiteVol_feature(dataframe):
     cols = ['lhCerebralWhiteMatterVol','rhCerebralWhiteMatterVol']
     dataframe['TotalWhiteVol'] = dataframe[cols].sum(axis=1)
 
+def add_age_class(dataframe, bins=6):
+    """
+    Adds 'AGE_CLASS' column to the dataframe, containing labels for age bracket
+    to which each subject belongs.
+
+    Parameters
+    ----------
+
+    dataframe : pandas DataFrame
+                Input dataframe to which "AGE_CLASS" column will be added.
+    bins : int, default is 6
+           Number of classes.
+    """
+    labels = list(range(1, bins + 1))
+    dataframe["AGE_CLASS"] = pd.qcut(dataframe.AGE_AT_SCAN,
+                                    bins,
+                                    labels=labels
+                                    )
+
 def drop_covars(dataframe):
     """
     Drops the following columns with covariate and confounding variables from
-    the dataframe: "SITE","AGE_AT_SCAN","DX_GROUP","SEX". "FIQ".
+    the dataframe: "SITE","AGE_AT_SCAN","DX_GROUP","SEX". "FIQ", "AGE_CLASS".
 
     Parameters
     ----------
@@ -150,7 +169,7 @@ def drop_covars(dataframe):
     covar_list : list
                 List of strings containing the name of the dropped columns.
     """
-    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ"]
+    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ","AGE_CLASS"]
     dataframe = dataframe.drop(covar_list, axis=1)
 
     return dataframe, covar_list
@@ -215,7 +234,7 @@ def plot_box(dataframe, feat_x, feat_y):
                           fontsize=20, pad=20)
     sns_boxplot.grid()
 
-    plt.savefig("data_plots/%s_box plot.png"% (dataframe.attrs['name']),
+    plt.savefig(f"data_plots/{dataframe.attrs['name']}_box plot.png",
                 dpi=300,
                 format="png",
                 bbox_inches="tight"
@@ -338,7 +357,7 @@ def neuroharmonize(dataframe, covariate= ["SITE","AGE_AT_SCAN"]):
                 List of strings that contains covariates to control for
                 during harmonization.
                 All covariates must be encoded numerically (no categorical
-                variables) and must contain a single column "SITE" with
+                variables) and list must contain a single column "SITE" with
                 site labels.
 
     Returns
