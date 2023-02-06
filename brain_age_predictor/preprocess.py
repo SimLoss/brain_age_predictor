@@ -241,67 +241,6 @@ def plot_box(dataframe, feat_x, feat_y):
                 )
 
     plt.show()
-def remove_outl(dataframe, z_thresh=3):      # <-----DA MIGLIORARE
-    """
-    Removes from dataframe all the rows corresponding to an outlier, meaning
-    they have at least one value in a columns that falls outside the
-    specified sigma range (default=3) from mean.
-
-    Parameters
-    ----------
-
-    dataframe : pandas DataFrame
-                Dataframe to be passed to the function.
-
-    z_thresh : int
-                Threshold for outliers in terms of number of sigma from mean.
-
-    """
-    dropped_df, covar_list =  drop_covars(dataframe)
-    numerical_df = dataframe.loc[: ,'TotalGrayVol']
-    lim = np.logical_and(numerical_df < numerical_df.quantile(0.99),
-                        numerical_df > numerical_df.quantile(0.01))
-    dataframe.loc[:, 'TotalGrayVol'] = numerical_df.where(lim, np.nan)
-    dataframe.dropna(inplace=True)
-
-def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
-    """
-    Utility function to normalize test set using only transform
-    method from the scaler.
-
-    Parameters
-    ----------
-
-    dataframe : pandas dataframe
-                Input dataframe to be normalized.
-    scaler : object-like
-             Scaler used to perform dataframe normalization with transform
-             method. Should be previously fitted on the train set and implement
-             a transform method.
-
-    harm_flag : boolean
-                Flag indicating if the dataframe has been previously harmonized.
-                DEFAULT=False.
-    dataframe_name : string
-    Returns
-
-    scaled_df : pandas dataframe
-            Normalized dataframe.
-    -------
-
-    """
-    drop_test, drop_list = drop_covars(dataframe)
-    scaled_df = pd.DataFrame(scaler.transform(drop_test))
-    scaled_df.columns = drop_test.columns
-    for column in drop_list:
-        scaled_df[column] = dataframe[column].values
-
-    if harm_flag == True:
-        scaled_df.attrs['name'] = f'{dataframe_name}_Harmonized'
-    else:
-        scaled_df.attrs['name'] = f'{dataframe_name}_Unharmonized'
-
-    return scaled_df
 
 def normalization(dataframe):
     """
