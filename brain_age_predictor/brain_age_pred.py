@@ -31,6 +31,7 @@ from sklearn.linear_model import LinearRegression, SGDRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
@@ -55,8 +56,8 @@ models = {
     "Linear_Regression": LinearRegression(),
     "SGDRegressor": SGDRegressor(),
     "Random_Forest_Regressor": RandomForestRegressor(),
-    #"KNeighborsRegressor": KNeighborsRegressor(),
-    #"SVR": SVR(),
+    "KNeighborsRegressor": KNeighborsRegressor(),
+    "SVR": SVR(),
     }
 
 #HYPERPARAMETER'S GRID
@@ -102,7 +103,7 @@ def stf_kfold(dataframe, n_splits, model, model_name,
     that returns stratified folds. The folds are made by preserving
     the percentage of samples for each class specified in "AGE_CLASS"
     column.
-    
+
     Parameters
     ----------
     dataframe : pandas dataframe
@@ -116,15 +117,15 @@ def stf_kfold(dataframe, n_splits, model, model_name,
     model_name : string
                 Name of the used model.
 
-    harm_flag : boolean
+    harm_flag : boolean, DEFAULT=False
             Flag indicating if the dataframe has been previously harmonized.
-            DEFAULT=False.
 
-    shuffle : boolean, default=False
+
+    shuffle : boolean, DEFAULT=True
         Whether to shuffle the data before splitting into batches.
         Note that the samples within each split will not be shuffled.
 
-    verbose : boolean, default=False
+    verbose : boolean, DEFAULT=False
         Verbosity state. If True, it shows the model parameters after
         cross validation.
     """
@@ -146,11 +147,8 @@ def stf_kfold(dataframe, n_splits, model, model_name,
     pr_val = np.array([])
 
     cv = StratifiedKFold(n_splits, shuffle= shuffle)
-    rob_scaler = RobustScaler()
     #cross-validation
     for train_index, val_index in cv.split(x, y_class):
-        rob_scaler.fit_transform(x[train_index])
-        rob_scaler.transform(x[val_index])
         model_fit = model.fit(x[train_index], y[train_index])
         predict_y_train = model_fit.predict(x[train_index])
         y[val_index] = np.squeeze(y[val_index])
@@ -428,7 +426,7 @@ def delta_age(true_age1,
     plt.tick_params(axis="y", labelsize=18)
     plt.legend(loc="upper right", fontsize=14)
     plt.savefig(
-        "images/delta_pred_{model_name}.png",
+        f"images/delta_pred_{model_name}.png",
         dpi=200,
         format="png")
 
@@ -455,33 +453,20 @@ if __name__ == '__main__':
         nh_flag = True
 
     #splitting the dataset into ASD and CTR groups.
-    ASD, CTR = df_split(df)
+    df_ASD, CTR = df_split(df)
     #split CTR dataset into train and test.
-    CTR_train, CTR_test = train_test_split(CTR,
+    df_CTR_train, df_CTR_test = train_test_split(CTR,
                                            test_size=0.3,
                                            random_state=42)
-
-    scaler = RobustScaler()
-    #normalizing train set; using fit_transform.
-    drop_train, drop_list = drop_covars(CTR_train)
-    df_CTR_train = pd.DataFrame(scaler.fit_transform(drop_train),
-                          columns = drop_train.columns, index = drop_train.index
-                          )
-    for column in drop_list:
-        df_CTR_train[column] = CTR_train[column].values
-
     if nh_flag is True:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
+        df_CTR_test.attrs['name'] = 'df_CTR_test_Harmonized'
+        df_ASD.attrs['name'] = 'df_ASD_Harmonized'
 
     else:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
-
-
-    #Once the train set has been normalized,
-    #scaling will be performed on the other datasets.
-    #Only the scaler transform will be performed to avoid data leakage.
-    df_CTR_test = test_scaler(CTR_test, scaler, nh_flag, "df_CTR_test")
-    df_ASD = test_scaler(ASD, scaler, nh_flag, "df_ASD")
+        df_CTR_test.attrs['name'] = 'df_CTR_test_Unharmonized'
+        df_ASD.attrs['name'] = 'df_ASD_Unharmonized'
 
     #Performing GridSearchCV on each model followed by CV
     start = perf_counter()

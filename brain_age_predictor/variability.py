@@ -7,6 +7,8 @@ import os
 import warnings
 import pickle
 from time import perf_counter
+import threading
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,9 +25,9 @@ from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        test_scaler)
+                        test_scaler,
+                        add_age_class)
 from brain_age_pred import make_predict, plot_scores
-import threading
 ##################################################
 #MODELS
 models = {
@@ -44,6 +46,8 @@ df_ABIDE = df_ABIDE[df_ABIDE.AGE_AT_SCAN<40]
 
 #adding total white matter Volume feature
 add_WhiteVol_feature(df_ABIDE)
+add_age_class(df_ABIDE, bins=10)
+
 harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize?  (yes/no)")
 if harm_flag == "yes":
 #harmonizing data by provenance site
@@ -56,22 +60,15 @@ else:
 #splitting data in ASD and CTR dataframe, taking only
 #the latter for further analysis.
 df_ASD, df_CTR = df_split(df_ABIDE)
-#scaling dataset
-scaler = StandardScaler()
-drop_CTR, drop_list = drop_covars(df_CTR)
-scaled_df = pd.DataFrame(scaler.fit_transform(drop_CTR))
-scaled_df.columns = drop_CTR.columns
-for column in drop_list:
-    scaled_df[column] = df_CTR[column].values
 
 #creating a list of datas' provenance site.
-site_list = scaled_df.SITE.unique()
+site_list = df_CTR.SITE.unique()
 #
 #initializing and filling a dictionary that will contain
 #each different dataframe based on site.
 df_dict = {}
 for site in site_list:
-    df_dict[site] = scaled_df[scaled_df.SITE == f'{site}']
+    df_dict[site] = df_CTR[df_CTR.SITE == f'{site}']
     df_dict[site].attrs['name'] = f'{site}'
 
 verbose = input("Do you want to display plot for each site?(yes/no)")
