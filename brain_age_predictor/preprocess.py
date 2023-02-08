@@ -136,10 +136,8 @@ def add_age_class(dataframe, bins=6):
     """
     Adds 'AGE_CLASS' column to the dataframe, containing labels for age bracket
     to which each subject belongs.
-
     Parameters
     ----------
-
     dataframe : pandas DataFrame
                 Input dataframe to which "AGE_CLASS" column will be added.
     bins : int, default is 6
@@ -169,7 +167,7 @@ def drop_covars(dataframe):
     covar_list : list
                 List of strings containing the name of the dropped columns.
     """
-    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ","AGE_CLASS"]
+    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ", "AGE_CLASS"]
     dataframe = dataframe.drop(covar_list, axis=1)
 
     return dataframe, covar_list
@@ -329,6 +327,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Data exploration for ABIDE dataset."
     )
+
     parser.add_argument(
         "-dp",
         "--datapath",
@@ -337,6 +336,20 @@ if __name__ == "__main__":
         default= '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
 
     )
+
+    parser.add_argument(
+        "-norm",
+        "--normalize",
+        action = 'store_true',
+        help="Use NeuroHarmonize to harmonize data by provenance site."
+        )
+
+    parser.add_argument(
+        "-neuroharm",
+        "--harmonize",
+        action = 'store_true',
+        help="Use NeuroHarmonize to harmonize data by provenance site."
+        )
     parser.add_argument(
         "-exp",
         "--exploration",
@@ -365,13 +378,11 @@ if __name__ == "__main__":
         dataframe = read_df(datapath)
 
     add_WhiteVol_feature(dataframe)
-
-    harmonize = input("Do you want to harmonize data? (yes/no): ")
-    if harmonize == "yes":
+    add_age_class(dataframe)
+    if args.harmonize:
         dataframe = neuroharmonize(dataframe)
 
-    norm = input("Do you want to normalize data? (yes/no): ")
-    if norm == "yes":
+    if args. normalize:
         normalization(dataframe)
 
     if args.exploration:
