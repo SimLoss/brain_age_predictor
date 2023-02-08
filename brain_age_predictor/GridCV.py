@@ -19,7 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import pearsonr
-from sklearn.linear_model import LinearRegression, SGDRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
@@ -77,11 +77,6 @@ def model_tuner_cv(dataframe, model, model_name):
                 "Linear_Regression":{"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
                                     },
-                "SGDRegressor":{"Feature__k": [10, 20, 30],
-                              "Feature__score_func": [f_regression],
-                              "Model__loss": ["squared_error","epsilon_insensitive"],
-                              "Model__learning_rate": ["constant","optimal","invscaling"]
-                                    },
                 "Random_Forest_Regressor":{"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
                                       "Model__n_estimators": [10, 100, 300],
@@ -93,7 +88,7 @@ def model_tuner_cv(dataframe, model, model_name):
                "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
                                       "Model__n_neighbors": [5, 10, 15],
-                                      "Model__weights": ['distance'],
+                                      "Model__weights": ['uniform','distance'],
                                       "Model__leaf_size": [20, 30, 50],
                                       "Model__p": [1,2],
                                      },
@@ -111,11 +106,10 @@ def model_tuner_cv(dataframe, model, model_name):
     x_train, y_train = drop_covars(dataframe)[0], dataframe['AGE_AT_SCAN']
     #Pipeline for setting subsequential working steps each time a model is
     #called on some data. It distinguish between train/test/val set, fitting the
-    #first and only transforming the latters, granting no data "leakeage".
+    #first and only transforming the latters.
     pipe = Pipeline(
     steps=[
         ("Feature", SelectKBest()),
-        ("Scaler", RobustScaler()),
         ("Model", model)
         ]
     )
@@ -133,7 +127,6 @@ def model_tuner_cv(dataframe, model, model_name):
 
     model_cv.fit(x_train, y_train)
     print("\nBest combination of hyperparameters:", model_cv.best_params_)
-    print(x_train)
     best_estimator = model_cv.best_estimator_
 
     return best_estimator
@@ -193,6 +186,8 @@ def stf_kfold(dataframe, n_splits, model, model_name,
     pr_val = np.array([])
 
     cv = StratifiedKFold(n_splits=n_splits, shuffle= shuffle, random_state=seed)
+    rob_scaler = RobustScaler()
+
     #cross-validation
     for train_index, val_index in cv.split(x, y_class):
         model_fit = model.fit(x[train_index], y[train_index])
@@ -212,15 +207,15 @@ def stf_kfold(dataframe, n_splits, model, model_name,
     if verbose:
         print("Model parameters:", model.get_params())
 
-    print("\nCross-Validation: metrics scores (mean values) on validation set:")
-    print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
-    print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
-    print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
-
     print("\nCross-Validation: metrics scores (mean values) on train set:")
     print(f"MSE:{np.mean(mse_train):.3f} \u00B1 {np.around(np.std(mse_train), 3)} [years^2]")
     print(f"MAE:{np.mean(mae_train):.3f} \u00B1 {np.around(np.std(mae_train), 3)} [years]")
     print(f"PR:{np.mean(pr_train):.3f} \u00B1 {np.around(np.std(pr_train), 3)}")
+
+    print("\nCross-Validation: metrics scores (mean values) on validation set:")
+    print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
+    print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
+    print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
 
     #saving results on disk folder "../best_estimator"
     if harm_flag is True:

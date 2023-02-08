@@ -61,8 +61,6 @@ def losocv(dataframe, model, model_name,
     rob_scaler = RobustScaler()
 
     for train_index, val_index in logocv.split(x, y, site_label):
-        rob_scaler.fit_transform(x[train_index])
-        rob_scaler.transform(x[val_index])
         model_fit = model.fit(x[train_index], y[train_index])
         predict_y_train = model_fit.predict(x[train_index])
         y[val_index] = np.squeeze(y[val_index])

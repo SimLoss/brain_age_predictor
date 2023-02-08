@@ -201,7 +201,7 @@ def plot_histogram(dataframe, feature):
         plt.title(f"Histogram of n. subjects VS {feature}", fontsize=20)
         plt.show()
 
-    plt.savefig("data_plots/%s_histogram.png"% (feature),
+    plt.savefig(f"data_plots/{feature}_histogram.png"% ,
                 dpi=300,
                 format="png",
                 bbox_inches="tight"

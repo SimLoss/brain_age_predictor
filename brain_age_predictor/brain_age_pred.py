@@ -33,7 +33,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from scipy.stats import pearsonr
-from sklearn.linear_model import LinearRegression, SGDRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
@@ -52,7 +52,7 @@ from preprocess import (read_df,
                         add_age_class)
 from GridCV import model_tuner_cv, stf_kfold
 from loso_CV import losocv
-from predict_helper import plot_scores, residual_plot
+from predict_helper import plot_scores, residual_plot, test_scaler
 
 #from DDNregressor import AgeRegressor
 
@@ -62,10 +62,9 @@ seed = 42
 models = {
     #"DDNregressor": AgeRegressor(),
     "Linear_Regression": LinearRegression(),
-    "SGDRegressor": SGDRegressor(random_state=seed),
     "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
-    #"KNeighborsRegressor": KNeighborsRegressor(),
-    #"SVR": SVR(),
+    "KNeighborsRegressor": KNeighborsRegressor(),
+    "SVR": SVR(),
     }
 
 def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
@@ -106,7 +105,7 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     else:
         saved_name = model_name + '_Unharmonized'
 
-    if dir_flag is True:
+    if cv_flag is True:
         try:
             with open(f"best_estimator/grid/{saved_name}.pkl", "rb") as file:
                 model_fit = pickle.load(file)
@@ -193,22 +192,29 @@ if __name__ == '__main__':
     # STEP 2: Split dataset in ASD and CTR, then the latter into train/test set.
     #===========================================================================
     #splitting the dataset into ASD and CTR groups.
-    df_ASD, CTR = df_split(df)
+    ASD, CTR = df_split(df)
     #split CTR dataset into train and test.
-    df_CTR_train, df_CTR_test = train_test_split(CTR,
+    CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
                                            random_state=42)
+    rob_scaler = RobustScaler()
+    #scaling train set; using fit_transform.
+    drop_train, drop_list = drop_covars(CTR_train)
+    df_CTR_train = pd.DataFrame(rob_scaler.fit_transform(drop_train),
+                          columns = drop_train.columns, index = drop_train.index
+                          )
+
+    for column in drop_list:
+        df_CTR_train[column] = CTR_train[column].values
 
     if nh_flag is True:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
-        df_CTR_test.attrs['name'] = 'df_CTR_test_Harmonized'
-        df_ASD.attrs['name'] = 'df_ASD_Harmonized'
-
     else:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
-        df_CTR_test.attrs['name'] = 'df_CTR_test_Unharmonized'
-        df_ASD.attrs['name'] = 'df_ASD_Unharmonized'
 
+    #using scaler to transform test/ASD sets
+    df_CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "df_CTR_test")
+    df_ASD = test_scaler(ASD, rob_scaler, nh_flag, "df_ASD")
     #==========================================
     # STEP 3: Cross Validation on training set.
     #==========================================
@@ -241,7 +247,7 @@ if __name__ == '__main__':
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")
     #=======================================================
-    # STEP 5: Prediction on test/ASD set and results' plots.
+    # STEP 4: Prediction on test/ASD set and results' plots.
     #=======================================================
     df_list = [df_CTR_train, df_CTR_test, df_ASD]
     #computing predictions with fitted models then plotting results
