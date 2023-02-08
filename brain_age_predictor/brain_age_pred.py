@@ -4,8 +4,8 @@
 Main module in which different models are being compared on ABIDE dataset using
 different cross validation: nested GridSearchCV and Leave-One-Site-Out CV.
 User must specify if harmonization by provenance site should be performed,
-using the proper command from terminal(see helper). If nothing's being stated, harmonization
-will automatically be performed.
+using the proper command from terminal(see helper). If nothing's being stated,
+harmonization won't be performed.
 Best estimators found are saved in local and used to make prediction of age
 on test set.
 
@@ -15,9 +15,9 @@ Workflow:
     train and test set.
 3. Cross validation on training set.
    Best models setting will be saved in "best estimator" folder.
-4. Best models are used to predict age on CTR train and test set and, finally, on
-   ASD dataset for a comparison of prediction between healthy subjects and the
-   ones with ASD.
+4. Best models are used to predict age on CTR train and test set and, finally,
+   on ASD dataset for a comparison of prediction between healthy subjects and
+   the ones with ASD.
 
 For each dataset, all plots will be saved in "images" folder.
 """
