@@ -27,7 +27,8 @@ from preprocess import (read_df,
                         df_split,
                         test_scaler,
                         add_age_class)
-from brain_age_pred import make_predict, plot_scores
+from brain_age_pred import make_predict
+from predict_helper import plot_scores, residual_plot
 ##################################################
 #MODELS
 models = {
@@ -36,17 +37,45 @@ models = {
     "KNeighborsRegressor": KNeighborsRegressor(),
     "SVR": SVR(),
     }
-##################################### MAIN
-datapath='/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
-#opening and setting the dataframe
-df_ABIDE = read_df(datapath)
+########################## MAIN
+if __name__ == '__main__':
 
-#removing subject with age>40 as they're poorly represented
-df_ABIDE = df_ABIDE[df_ABIDE.AGE_AT_SCAN<40]
+    parser = argparse.ArgumentParser(
+        description="Main module for brain age predictor package."
+        )
+    parser.add_argument(
+        "-dp",
+        "--datapath",
+        type = str,
+        help="Path to the data folder.",
+        default= '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
+        )
 
-#adding total white matter Volume feature
-add_WhiteVol_feature(df_ABIDE)
-add_age_class(df_ABIDE, bins=10)
+    parser.add_argument(
+        "-loso",
+        "--losocv"
+        action = 'store_true',
+        help="Use Leave-One-Site-Out CV."
+        )
+
+    parser.add_argument(
+        "-grid",
+        "--gridcv"
+        action = 'store_true',
+        help="Use GridSearchCV nested with StratifiedKFold."
+        )
+
+    args = parser.parse_args()
+
+    datapath = args.datapath
+    df = read_df(datapath)
+
+    #removing subject with age>40 as they're poorly represented
+    df = df[df.AGE_AT_SCAN<40]
+
+    #adding total white matter Volume feature and age class.
+    add_WhiteVol_feature(df)
+    add_age_class(df)
 
 harm_flag = input("Do you want to harmonize data by provenance site using NeuroHarmonize?  (yes/no)")
 if harm_flag == "yes":
