@@ -79,7 +79,7 @@ class AgeRegressor(BaseEstimator):
     """
     def __init__(self, learning_rate=0.001,
                  batch_size=32, dropout_rate=0.2,
-                 epochs=50, verbose= False):
+                 epochs=250, verbose= False):
         """
         Contructor of AgeRegressor class.
         """
@@ -89,6 +89,7 @@ class AgeRegressor(BaseEstimator):
         self.dropout_rate = dropout_rate
         self.epochs = epochs
         self.verbose= verbose
+
     def fit(self, X, y):
         """
         Fit method. Builds the NN and fits using MAE.
@@ -104,11 +105,16 @@ class AgeRegressor(BaseEstimator):
 
         """
         inputs = Input(shape=X.shape[1])
-        hidden = Dense(64, activation="relu")(inputs)
+        hidden = Dense(128, activation="relu")(inputs)
+        hidden = BatchNormalization()(hidden)
+        #hidden = Dropout(self.dropout_rate)(hidden)
+        hidden = Dense(64, activation="relu")(hidden)
+        hidden = BatchNormalization()(hidden)
+        #hidden = Dropout(self.dropout_rate)(hidden)
         hidden = Dense(32, activation="relu")(hidden)
-        hidden = Dense(16, activation="relu")(hidden)
+        hidden = BatchNormalization()(hidden)
         hidden = Dropout(self.dropout_rate)(hidden)
-        hidden = Dense(8, activation="relu")(hidden)
+        hidden = Dense(16, activation="relu")(hidden)
         hidden = BatchNormalization()(hidden)
         outputs = Dense(1, activation="linear")(hidden)
 
@@ -122,22 +128,24 @@ class AgeRegressor(BaseEstimator):
         if self.verbose:
             self.model.summary()
 
-        callbacks = [EarlyStopping(monitor="MAE",
+        callbacks = [EarlyStopping(monitor="val_MAE",
                                    patience=10,
                                    verbose=1),
-                     ReduceLROnPlateau(monitor='MAE',
+                     ReduceLROnPlateau(monitor='val_MAE',
                                        factor=0.1,
-                                       patience=2,
+                                       patience=5,
                                        verbose=1)]
 
         history = self.model.fit(X,
                                  y,
+                validation_split=0.2,
                 epochs=self.epochs,
                 callbacks=callbacks,
                 batch_size=self.batch_size,
-                verbose=0)
+                verbose=1)
 
         print(history.history.keys())
+        '''
         plt.plot(history.history["loss"])
         plt.plot(history.history["val_loss"])
         plt.title('Model loss')
@@ -145,6 +153,8 @@ class AgeRegressor(BaseEstimator):
         plt.xlabel('Epochs')
         plt.legend(['train', 'validation'], loc='upper right')
         plt.show()
+        '''
+        return self.model
 
     def predict(self, X):
         """

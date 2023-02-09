@@ -2,7 +2,7 @@
 #pylint: disable=C0103
 """
 Main module in which different models are being compared on ABIDE dataset using
-different cross validation: nested GridSearchCV and Leave-One-Site-Out CV.
+different cross validation: GridSearchCV and Leave-One-Site-Out CV.
 User must specify if harmonization by provenance site should be performed,
 using the proper command from terminal(see helper). If nothing's being stated,
 harmonization won't be performed.
@@ -25,7 +25,7 @@ import pickle
 import argparse
 from time import perf_counter
 
-
+import tensorflow
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,23 +47,23 @@ from preprocess import (read_df,
                         neuroharmonize,
                         df_split,
                         drop_covars,
-                        add_age_class,
                         test_scaler,
                         train_scaler)
-from GridCV import model_tuner_cv, stf_kfold
+from GridCV import model_tuner_cv
 from loso_CV import losocv
 from predict_helper import plot_scores, residual_plot
-
+from DDNregressor import AgeRegressor
 #from DDNregressor import AgeRegressor
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 seed = 42
+tensorflow.keras.backend.clear_session()
 #MODELS
 models = {
     #"DDNregressor": AgeRegressor(),
     "Linear_Regression": LinearRegression(),
     #"Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
-    #"KNeighborsRegressor": KNeighborsRegressor(),
+    "KNeighborsRegressor": KNeighborsRegressor(),
     #"SVR": SVR(),
     }
 
@@ -153,7 +153,7 @@ if __name__ == '__main__':
         "-grid",
         "--gridcv",
         action = 'store_true',
-        help="Use GridSearchCV nested with StratifiedKFold."
+        help="Use GridSearch cross validation."
         )
     parser.add_argument(
         "-neuroharm",
@@ -174,7 +174,6 @@ if __name__ == '__main__':
 
     #adding total white matter Volume feature
     add_WhiteVol_feature(df)
-    add_age_class(df)
 
     if args.harmonize:
         nh_flag = args.harmonize
@@ -204,19 +203,11 @@ if __name__ == '__main__':
     for name_regressor, regressor in models.items():
 
         if args.gridcv:
-            #Performing nested CV: GridSearchCV for each model followed by CV
+            #Performing GridSearch Cross Validation
             dir_flag = True
             best_hyp_estimator = model_tuner_cv(df_CTR_train,
                                                 regressor,
                                                 name_regressor)
-
-            #now that the model is tuned, stratified-CV will be performed
-            stf_kfold(df_CTR_train,
-                      10,
-                      best_hyp_estimator,
-                      name_regressor,
-                      nh_flag,
-                     )
 
         if args.losocv:
             #performing Leave-One-Site-Out cross validation

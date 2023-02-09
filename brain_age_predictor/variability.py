@@ -26,7 +26,6 @@ from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        add_age_class,
                         test_scaler,
                         train_scaler)
 from brain_age_pred import make_predict
@@ -91,7 +90,6 @@ if __name__ == '__main__':
 
     #adding total white matter Volume feature
     add_WhiteVol_feature(df_ABIDE)
-    add_age_class(df_ABIDE)
 
     if args.harmonize:
         nh_flag = args.harmonize

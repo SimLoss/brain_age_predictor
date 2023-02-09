@@ -26,8 +26,7 @@ from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        drop_covars,
-                        add_age_class)
+                        drop_covars)
 
 def plot_scores(y_test, age_predicted, metrics,
                 model_name="Regressor model",

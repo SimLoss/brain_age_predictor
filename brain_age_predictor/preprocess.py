@@ -138,27 +138,10 @@ def add_WhiteVol_feature(dataframe):
     cols = ['lhCerebralWhiteMatterVol','rhCerebralWhiteMatterVol']
     dataframe['TotalWhiteVol'] = dataframe[cols].sum(axis=1)
 
-def add_age_class(dataframe, bins=6):
-    """
-    Adds 'AGE_CLASS' column to the dataframe, containing labels for age bracket
-    to which each subject belongs.
-    Parameters
-    ----------
-    dataframe : pandas DataFrame
-                Input dataframe to which "AGE_CLASS" column will be added.
-    bins : int, default is 6
-           Number of classes.
-    """
-    labels = list(range(1, bins + 1))
-    dataframe["AGE_CLASS"] = pd.qcut(dataframe.AGE_AT_SCAN,
-                                    bins,
-                                    labels=labels
-                                    )
-
 def drop_covars(dataframe):
     """
     Drops the following columns with covariate and confounding variables from
-    the dataframe: "SITE","AGE_AT_SCAN","DX_GROUP","SEX". "FIQ", "AGE_CLASS".
+    the dataframe: "SITE","AGE_AT_SCAN","DX_GROUP","SEX". "FIQ".
 
     Parameters
     ----------
@@ -173,7 +156,7 @@ def drop_covars(dataframe):
     covar_list : list
                 List of strings containing the name of the dropped columns.
     """
-    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ", "AGE_CLASS"]
+    covar_list = ["SITE","AGE_AT_SCAN","DX_GROUP","SEX","FIQ"]
     dataframe = dataframe.drop(covar_list, axis=1)
 
     return dataframe, covar_list
@@ -455,7 +438,6 @@ if __name__ == "__main__":
         dataframe = read_df(datapath)
 
     add_WhiteVol_feature(dataframe)
-    add_age_class(dataframe)
 
     if args. normalize:
         dataframe = normalization(dataframe)
