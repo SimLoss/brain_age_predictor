@@ -29,44 +29,6 @@ from preprocess import (read_df,
                         drop_covars,
                         add_age_class)
 
-def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
-    """
-    Utility function to normalize test set using only transform
-    method from the scaler.
-    Parameters
-    ----------
-    dataframe : pandas dataframe
-                Input dataframe to be normalized.
-
-    scaler : object-like
-             Scaler used to perform dataframe normalization with transform
-             method. Should be previously fitted on the train set and implement
-             a transform method.
-
-    harm_flag : boolean
-                Flag indicating if the dataframe has been previously harmonized.
-                DEFAULT=False.
-
-    dataframe_name : string
-                    Name of the data
-    Returns
-    -------
-    scaled_df : pandas dataframe.
-            Normalized dataframe.
-    """
-    drop_test, drop_list = drop_covars(dataframe)
-    scaled_df = pd.DataFrame(scaler.transform(drop_test))
-    scaled_df.columns = drop_test.columns
-    for column in drop_list:
-        scaled_df[column] = dataframe[column].values
-
-    if harm_flag is True:
-        scaled_df.attrs['name'] = f'{dataframe_name}_Harmonized'
-    else:
-        scaled_df.attrs['name'] = f'{dataframe_name}_Unharmonized'
-
-    return scaled_df
-
 def plot_scores(y_test, age_predicted, metrics,
                 model_name="Regressor model",
                 dataframe_name="Dataset metrics"):

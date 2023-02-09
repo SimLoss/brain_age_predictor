@@ -47,10 +47,12 @@ from preprocess import (read_df,
                         neuroharmonize,
                         df_split,
                         drop_covars,
-                        add_age_class)
+                        add_age_class,
+                        test_scaler,
+                        train_scaler)
 from GridCV import model_tuner_cv, stf_kfold
 from loso_CV import losocv
-from predict_helper import plot_scores, residual_plot, test_scaler
+from predict_helper import plot_scores, residual_plot
 
 #from DDNregressor import AgeRegressor
 
@@ -60,9 +62,9 @@ seed = 42
 models = {
     #"DDNregressor": AgeRegressor(),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
+    #"Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
+    #"KNeighborsRegressor": KNeighborsRegressor(),
+    #"SVR": SVR(),
     }
 
 def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
@@ -159,7 +161,7 @@ if __name__ == '__main__':
         action = 'store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
-    args = parser.parse_args()
+    args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
     #=============================================================
     # STEP 1: Read the ABIDE dataframe and make some preprocessing.
@@ -188,21 +190,9 @@ if __name__ == '__main__':
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
                                            random_state=42)
-    #initializing a scaler
+    #initializing a scaler and scaling train set
     rob_scaler = RobustScaler()
-    #scaling train set; using fit_transform.
-    drop_train, drop_list = drop_covars(CTR_train)
-    df_CTR_train = pd.DataFrame(rob_scaler.fit_transform(drop_train),
-                          columns = drop_train.columns, index = drop_train.index
-                          )
-
-    for column in drop_list:
-        df_CTR_train[column] = CTR_train[column].values
-
-    if nh_flag is True:
-        df_CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
-    else:
-        df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+    df_CTR_train = train_scaler(CTR_train, rob_scaler, nh_flag)
 
     #using fitted scaler to transform test/ASD sets
     df_CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "df_CTR_test")

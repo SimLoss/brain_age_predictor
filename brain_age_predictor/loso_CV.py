@@ -55,10 +55,9 @@ def losocv(dataframe, model, model_name,
     mae_val = np.array([])
     pr_val = np.array([])
 
+
     #cross-validation with Leave-One-Group-Out; data grouped by site
     logocv = LeaveOneGroupOut()
-
-    rob_scaler = RobustScaler()
 
     for train_index, val_index in logocv.split(x, y, site_label):
         model_fit = model.fit(x[train_index], y[train_index])
@@ -78,15 +77,15 @@ def losocv(dataframe, model, model_name,
     if verbose:
         print("Model parameters:", model.get_params())
 
-    print("\nCross-Validation: metrics scores (mean values) on validation set:")
-    print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
-    print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
-    print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
-
     print("\nCross-Validation: metrics scores (mean values) on train set:")
     print(f"MSE:{np.mean(mse_train):.3f} \u00B1 {np.around(np.std(mse_train), 3)} [years^2]")
     print(f"MAE:{np.mean(mae_train):.3f} \u00B1 {np.around(np.std(mae_train), 3)} [years]")
     print(f"PR:{np.mean(pr_train):.3f} \u00B1 {np.around(np.std(pr_train), 3)}")
+
+    print("\nCross-Validation: metrics scores (mean values) on validation set:")
+    print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
+    print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
+    print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
 
     #saving results on disk folder "../best_estimator"
     if harm_flag is True:

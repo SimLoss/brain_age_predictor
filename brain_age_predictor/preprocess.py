@@ -8,7 +8,7 @@
 
 It may be also used as a standalone program to explore the dataset.
 """
-
+import sys
 import os
 import logging
 import inspect
@@ -19,7 +19,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from neuroHarmonize import harmonizationLearn
 
 
@@ -76,16 +76,23 @@ def data_info(dataframe):
     print(f"Dataframe info:")
     print(dataframe.info(memory_usage = False))
     print(f"\n\nDataframe size: {dataframe.size} elements" )
-    print(f"\n\nNumber of ASD cases: {dataframe[dataframe.DX_GROUP == 1].AGE_AT_SCAN.count()}")
-    print(f"Number of Controls: {dataframe[dataframe.DX_GROUP == -1].AGE_AT_SCAN.count()}")
-    print(f"Mean Age: {dataframe['AGE_AT_SCAN'].values.mean()} \u00B1 {dataframe['AGE_AT_SCAN'].values.std()}")
+    print(f"\n\nNumber of ASD cases:"
+        +f" {dataframe[dataframe.DX_GROUP == 1].AGE_AT_SCAN.count()}")
+    print(f"Number of Controls:"
+        +f" {dataframe[dataframe.DX_GROUP == -1].AGE_AT_SCAN.count()}")
+    print(f"Mean Age in ASD set: "
+        +f"{dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.mean()}"
+        +f" \u00B1 {dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.std()}")
+    print(f"Mean Age in CTR set: "
+        +f"{dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.mean()}"
+        +f" \u00B1 {dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.std()}")
     print("\n\nShowing the first and last 10 rows of the dataframe.. ")
     print(dataframe.head(10))
     print(dataframe.tail(10))
 
-    print("\n\nShowing statistical quantities for each column after scaling and normalization..")
-    normalization(dataframe)
-    des = dataframe.describe()
+    print("\n\nShowing statistical quantities for each column after normalization..")
+    normalized_df = normalization(dataframe)
+    des = normalized_df.describe()
     print(des)
 
 def df_split(dataframe):
@@ -265,6 +272,85 @@ def normalization(dataframe):
 
     return norm_df
 
+def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
+    """
+    Utility function to normalize test set using only transform
+    method from the scaler.
+    Parameters
+    ----------
+    dataframe : pandas dataframe
+                Input dataframe to be normalized.
+
+    scaler : object-like
+             Scaler used to perform dataframe normalization with transform
+             method. Should be previously fitted on the train set and implement
+             a transform method.
+
+    harm_flag : boolean
+                Flag indicating if the dataframe has been previously harmonized.
+                DEFAULT=False.
+
+    dataframe_name : string
+                    Name of the data
+    Returns
+    -------
+    scaled_df : pandas dataframe.
+            Normalized dataframe.
+    """
+    drop_test, drop_list = drop_covars(dataframe)
+    scaled_df = pd.DataFrame(scaler.transform(drop_test))
+    scaled_df.columns = drop_test.columns
+    for column in drop_list:
+        scaled_df[column] = dataframe[column].values
+
+    if harm_flag is True:
+        scaled_df.attrs['name'] = f'{dataframe_name}_Harmonized'
+    else:
+        scaled_df.attrs['name'] = f'{dataframe_name}_Unharmonized'
+
+    return scaled_df
+
+def train_scaler(dataframe, scaler, harm_flag=False):
+    """
+    Utility function to normalize test set using only transform
+    method from the scaler.
+    Parameters
+    ----------
+    dataframe : pandas dataframe
+                Input dataframe to be normalized.
+
+    scaler : object-like
+             Scaler used to perform dataframe normalization with transform
+             method. Should be previously fitted on the train set and implement
+             a transform method.
+
+    harm_flag : boolean
+                Flag indicating if the dataframe has been previously harmonized.
+                DEFAULT=False.
+
+    dataframe_name : string
+                    Name of the data
+    Returns
+    -------
+    scaled_df : pandas dataframe.
+            Normalized dataframe.
+    """
+
+    drop_train, drop_list = drop_covars(dataframe)
+    scaled_df = pd.DataFrame(scaler.fit_transform(drop_train),
+                          columns = drop_train.columns, index = drop_train.index
+                          )
+
+    for column in drop_list:
+        scaled_df[column] = dataframe[column].values
+
+    if harm_flag is True:
+        scaled_df.attrs['name'] = 'df_CTR_train_Harmonized'
+    else:
+        scaled_df.attrs['name'] = 'df_CTR_train_Unharmonized'
+
+    return scaled_df
+
 def neuroharmonize(dataframe, covariate= ["SITE","AGE_AT_SCAN"]):
     """
     Harmonize dataset using neuroHarmonize, a harmonization tools for
@@ -316,7 +402,7 @@ def neuroharmonize(dataframe, covariate= ["SITE","AGE_AT_SCAN"]):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Data exploration for ABIDE dataset."
+        description="Data exploration module for ABIDE dataset."
     )
 
     parser.add_argument(
@@ -360,7 +446,7 @@ if __name__ == "__main__":
         nargs=2,
         help= "Draw and save a box plot to show distributions of two specified feature (e. g. feat_x feat_y). ",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 #############################################################
 

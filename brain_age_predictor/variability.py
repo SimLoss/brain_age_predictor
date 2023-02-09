@@ -1,8 +1,8 @@
 """
 Module testing the reproducibility of the results on each site's dataframe.
 The analysis will be performed on control subjects.
-
 """
+import sys
 import os
 import warnings
 import pickle
@@ -26,9 +26,11 @@ from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        add_age_class)
+                        add_age_class,
+                        test_scaler,
+                        train_scaler)
 from brain_age_pred import make_predict
-from predict_helper import plot_scores, residual_plot, test_scaler
+from predict_helper import plot_scores, residual_plot
 
 seed = 42 #setting seed for reproducibility
 
@@ -78,7 +80,7 @@ if __name__ == '__main__':
         help="Use models trained with Leave-One-Site-Out CV."
         )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 ############################
     datapath = args.datapath
@@ -102,21 +104,10 @@ if __name__ == '__main__':
     #splitting data in ASD and CTR dataframe, taking only
     #the latter for further analysis.
     ASD, CTR = df_split(df_ABIDE)
-    #initializing a scaler
+    #initializing a scaler and scaling CTR set
     rob_scaler = RobustScaler()
-    #scaling train set; using fit_transform.
-    drop_train, drop_list = drop_covars(CTR)
-    df_CTR = pd.DataFrame(rob_scaler.fit_transform(drop_train),
-                          columns = drop_train.columns, index = drop_train.index
-                          )
+    df_CTR = train_scaler(CTR, rob_scaler, nh_flag)
 
-    for column in drop_list:
-        df_CTR[column] = CTR[column].values
-
-    if nh_flag is True:
-        df_CTR.attrs['name'] = 'df_CTR_train_Harmonized'
-    else:
-        df_CTR.attrs['name'] = 'df_CTR_train_Unharmonized'
     #creating a list of datas' provenance site.
     site_list = df_CTR.SITE.unique()
 
