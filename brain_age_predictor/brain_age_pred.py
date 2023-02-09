@@ -8,7 +8,6 @@ using the proper command from terminal(see helper). If nothing's being stated,
 harmonization won't be performed.
 Best estimators found are saved in local and used to make prediction of age
 on test set.
-
 Workflow:
 1. Read the ABIDE dataframe and make some preprocessing.
 2. Split dataframe into cases and controls, the latter (CTR) in
@@ -18,7 +17,6 @@ Workflow:
 4. Best models are used to predict age on CTR train and test set and, finally,
    on ASD dataset for a comparison of prediction between healthy subjects and
    the ones with ASD.
-
 For each dataset, all plots will be saved in "images" folder.
 """
 import os
@@ -71,19 +69,14 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     """
     Loads pre-trained model to make prediction on "unseen" test datas.
     Stores the score metrics of a prediction.
-
     Parameters
     ----------
-
     dataframe : pandas dataframe
                 Input dataframe to make predictions on.
-
     model_name : string
                 Name of the chosen model.
-
     harm_flag : boolean, DEFAULT=False.
                 Flag indicating if the dataframe has been previously harmonized.
-
     cv_flag : boolean, DEFAULT=False.
                 Flag indicating which kind of cross validatio has been performed.
                 True: GridSearCV, False: Leave-Out-Single-Site CV.
@@ -91,10 +84,8 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
    -------
     age_predicted:  array-like
                     Array containing the predicted age of each subject.
-
     y_test : pandas dataframe
              Pandas dataframe column containing the ground truth age.
-
     score_metrics : dictionary
                     Dictionary containing names of metrics as keys and result
                     metrics for a specific model as values.
@@ -197,6 +188,7 @@ if __name__ == '__main__':
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
                                            random_state=42)
+    #initializing a scaler
     rob_scaler = RobustScaler()
     #scaling train set; using fit_transform.
     drop_train, drop_list = drop_covars(CTR_train)
@@ -212,7 +204,7 @@ if __name__ == '__main__':
     else:
         df_CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
 
-    #using scaler to transform test/ASD sets
+    #using fitted scaler to transform test/ASD sets
     df_CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "df_CTR_test")
     df_ASD = test_scaler(ASD, rob_scaler, nh_flag, "df_ASD")
     #==========================================

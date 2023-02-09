@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "-loso",
         "--losocv",
-        action = 'store_false',
+        action = 'store_true',
         help="Use models trained with Leave-One-Site-Out CV."
         )
 
@@ -93,23 +93,37 @@ if __name__ == '__main__':
 
     if args.harmonize:
         nh_flag = args.harmonize
-        harm_status = "Normalized"
-    else:
-        nh_flag = args.harmonize
         df_ABIDE = neuroharmonize(df_ABIDE)
         harm_status = "NeuroHarmonized"
+    else:
+        nh_flag = args.harmonize
+        harm_status = "Normalized"
 
     #splitting data in ASD and CTR dataframe, taking only
     #the latter for further analysis.
-    df_ASD, df_CTR = df_split(df_ABIDE)
+    ASD, CTR = df_split(df_ABIDE)
+    #initializing a scaler
+    rob_scaler = RobustScaler()
+    #scaling train set; using fit_transform.
+    drop_train, drop_list = drop_covars(CTR)
+    df_CTR = pd.DataFrame(rob_scaler.fit_transform(drop_train),
+                          columns = drop_train.columns, index = drop_train.index
+                          )
 
+    for column in drop_list:
+        df_CTR[column] = CTR[column].values
+
+    if nh_flag is True:
+        df_CTR.attrs['name'] = 'df_CTR_train_Harmonized'
+    else:
+        df_CTR.attrs['name'] = 'df_CTR_train_Unharmonized'
     #creating a list of datas' provenance site.
     site_list = df_CTR.SITE.unique()
-    
+
     if args.losocv:
-        dir_flag = True
-    else:
         dir_flag = False
+    else:
+        dir_flag = True
     #initializing and filling a dictionary that will contain
     #each different dataframe based on site.
     df_dict = {}

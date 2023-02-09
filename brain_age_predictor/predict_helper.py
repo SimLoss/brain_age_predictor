@@ -113,7 +113,7 @@ def plot_scores(y_test, age_predicted, metrics,
               fontsize=20)
     plt.yticks(fontsize=18)
     plt.xticks(fontsize=18)
-    plt.legend(loc="upper right", fontsize=14)
+    plt.legend(loc="upper left", fontsize=14)
     anchored_text = AnchoredText(f"{dataframe_name} metrics:"
                                  f"\nMAE= {mae} [years]"
                                  f"\n MSE= {mse} [years^2]"

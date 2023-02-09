@@ -17,10 +17,9 @@ import argparse
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy import stats
 import matplotlib
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import RobustScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from neuroHarmonize import harmonizationLearn
 
 
@@ -79,7 +78,7 @@ def data_info(dataframe):
     print(f"\n\nDataframe size: {dataframe.size} elements" )
     print(f"\n\nNumber of ASD cases: {dataframe[dataframe.DX_GROUP == 1].AGE_AT_SCAN.count()}")
     print(f"Number of Controls: {dataframe[dataframe.DX_GROUP == -1].AGE_AT_SCAN.count()}")
-
+    print(f"Mean Age: {dataframe['AGE_AT_SCAN'].values.mean()} \u00B1 {dataframe['AGE_AT_SCAN'].values.std()}")
     print("\n\nShowing the first and last 10 rows of the dataframe.. ")
     print(dataframe.head(10))
     print(dataframe.tail(10))
@@ -201,7 +200,7 @@ def plot_histogram(dataframe, feature):
         plt.title(f"Histogram of n. subjects VS {feature}", fontsize=20)
         plt.show()
 
-    plt.savefig(f"data_plots/{feature}_histogram.png"
+    plt.savefig(f"data_plots/{feature}_histogram.png",
                 dpi=300,
                 format="png",
                 bbox_inches="tight"
@@ -242,37 +241,29 @@ def plot_box(dataframe, feat_x, feat_y):
 
 def normalization(dataframe):
     """
-    Makes data normalization for exploration based on total brain surface, volume and average thickness.
+    Makes data normalization by scaling each feature to (0,1) range.
 
     Parameters
     ----------
 
     dataframe : pandas DataFrame
                 Dataframe to be passed to the function.
+    Returns
+    -------
+    norm_df: pandas Dataframe
+             Normalized dataframe.
     """
-    #locate all brain's area surface columns
-    surf_col = dataframe.loc[:, ["SurfArea" in i for i in dataframe.columns]]
-    #calculate the total surface as sum of all the areas' surfaces
-    tot_surf = surf_col.sum(axis=1)
-    #divide each surface value by the total
-    dataframe.loc[:, ["SurfArea" in i for i in dataframe.columns]] = surf_col.divide(tot_surf, axis=0)
+    scaler = MinMaxScaler()
+    #scaling dataframe columns by max; using fit_transform.
+    drop_df, drop_list = drop_covars(dataframe)
+    norm_df = pd.DataFrame(scaler.fit_transform(drop_df),
+                          columns = drop_df.columns, index = drop_df.index
+                          )
+    for column in drop_list:
+            norm_df[column] = dataframe[column].values
+    norm_df.attrs['name'] = "Normalized dataframe"
 
-    vol_col = dataframe.loc[:, ["Vol" in i for i in dataframe.columns]]
-    #calculate total brain's volume summing gray and white matter values
-    tot_vol = dataframe["TotalGrayVol"] + dataframe["TotalWhiteVol"]
-    dataframe.loc[:, ["Vol" in i for i in dataframe.columns]] = (vol_col
-            .divide(tot_vol, axis=0)
-            )
-    #Thickness
-    thick_col = dataframe.loc[:, ["ThickAvg" in i for i in dataframe.columns]]
-    tot_thick = dataframe["lh_MeanThickness"] + dataframe["rh_MeanThickness"]
-    dataframe.loc[:, ["ThickAvg" in i for i in dataframe.columns]] = (thick_col
-            .divide(tot_thick, axis=0)
-            )
-    if dataframe.attrs['name'] ==  "Harmonized ABIDE":
-        dataframe.attrs['name'] = "Harmonized_Normalized ABIDE"
-    else:
-        dataframe.attrs['name'] = "Normalized ABIDE"
+    return norm_df
 
 def neuroharmonize(dataframe, covariate= ["SITE","AGE_AT_SCAN"]):
     """
@@ -379,11 +370,12 @@ if __name__ == "__main__":
 
     add_WhiteVol_feature(dataframe)
     add_age_class(dataframe)
-    if args.harmonize:
-        dataframe = neuroharmonize(dataframe)
 
     if args. normalize:
-        normalization(dataframe)
+        dataframe = normalization(dataframe)
+
+    if args.harmonize:
+        dataframe = neuroharmonize(dataframe)
 
     if args.exploration:
         data_info(dataframe)
