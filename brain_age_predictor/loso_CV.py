@@ -45,11 +45,6 @@ def losocv(dataframe, model, model_name,
     dataframe.SITE = dataframe.SITE.astype('category').cat.codes
     site_label = dataframe.SITE.to_numpy()
 
-    #empty arrays for train metrics.
-    mse_train = np.array([])
-    mae_train = np.array([])
-    pr_train = np.array([])
-
     #empty arrays for validation metrics.
     mse_val = np.array([])
     mae_val = np.array([])
@@ -65,10 +60,6 @@ def losocv(dataframe, model, model_name,
         y[val_index] = np.squeeze(y[val_index])
         predict_y_val = model_fit.predict(x[val_index])
 
-        mse_train = np.append(mse_train, mean_squared_error(y[train_index], predict_y_train))
-        mae_train = np.append(mae_train, mean_absolute_error(y[train_index], predict_y_train))
-        pr_train = np.append(pr_train, pearsonr(y[train_index], predict_y_train)[0])
-
         mse_val = np.append(mse_val, mean_squared_error(y[val_index], predict_y_val))
         mae_val = np.append(mae_val, mean_absolute_error(y[val_index], predict_y_val))
         pr_val = np.append(pr_val, pearsonr(y[val_index], predict_y_val)[0])
@@ -76,11 +67,6 @@ def losocv(dataframe, model, model_name,
         #Print the model's parameters after cross validation.
     if verbose:
         print("Model parameters:", model.get_params())
-
-    print("\nCross-Validation: metrics scores (mean values) on train set:")
-    print(f"MSE:{np.mean(mse_train):.3f} \u00B1 {np.around(np.std(mse_train), 3)} [years^2]")
-    print(f"MAE:{np.mean(mae_train):.3f} \u00B1 {np.around(np.std(mae_train), 3)} [years]")
-    print(f"PR:{np.mean(pr_train):.3f} \u00B1 {np.around(np.std(pr_train), 3)}")
 
     print("\nCross-Validation: metrics scores (mean values) on validation set:")
     print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")

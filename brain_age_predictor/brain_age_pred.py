@@ -8,15 +8,17 @@ using the proper command from terminal(see helper). If nothing's being stated,
 harmonization won't be performed.
 Best estimators found are saved in local and used to make prediction of age
 on test set.
+
 Workflow:
 1. Read the ABIDE dataframe and make some preprocessing.
 2. Split dataframe into cases and controls, the latter (CTR) in
-    train and test set.
+    train and test set. Scale the datasets.
 3. Cross validation on training set.
    Best models setting will be saved in "best estimator" folder.
 4. Best models are used to predict age on CTR train and test set and, finally,
    on ASD dataset for a comparison of prediction between healthy subjects and
    the ones with ASD.
+
 For each dataset, all plots will be saved in "images" folder.
 """
 import os
@@ -39,7 +41,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import RobustScaler, StandardScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn.feature_selection import f_regression
 
 from preprocess import (read_df,
@@ -53,18 +55,21 @@ from GridCV import model_tuner_cv
 from loso_CV import losocv
 from predict_helper import plot_scores, residual_plot
 from DDNregressor import AgeRegressor
-#from DDNregressor import AgeRegressor
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#setting seed for reproducibility
 seed = 42
+np.random.seed(seed)
+#shutting down annoying warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#clear tensorflow session at each run
 tensorflow.keras.backend.clear_session()
 #MODELS
 models = {
-    #"DDNregressor": AgeRegressor(),
+    "DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    #"Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
+    "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
     "KNeighborsRegressor": KNeighborsRegressor(),
-    #"SVR": SVR(),
+    "SVR": SVR(),
     }
 
 def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
@@ -97,20 +102,22 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
         saved_name = model_name + '_Harmonized'
     else:
         saved_name = model_name + '_Unharmonized'
-
+    #selecting the model to load to make prediction
     if cv_flag is True:
         try:
             with open(f"best_estimator/grid/{saved_name}.pkl", "rb") as file:
                 model_fit = pickle.load(file)
         except FileNotFoundError:
-            print("Directory or file not found. best estimator folder must contain loso and grid folders")
+            print("Directory or file not found. best models  must be contained"
+                    +f" in grid folder")
     else:
         try:
             with open(f"best_estimator/loso/{saved_name}.pkl", "rb") as file:
                 model_fit = pickle.load(file)
         except FileNotFoundError:
-            print("Directory or file not found. best estimator folder must contain loso and grid folders")
-
+            print("Directory or file not found. best models  must be contained"
+                    +f" in loso folder")
+    #prediction
     x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
     age_predicted = model_fit.predict(x_test.values)
@@ -139,26 +146,42 @@ if __name__ == '__main__':
         "--datapath",
         type = str,
         help="Path to the data folder.",
-        default= '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
+        default='dataset/FS_features_ABIDE_males.csv'
         )
 
     parser.add_argument(
         "-loso",
         "--losocv",
-        action = 'store_true',
-        help="Use Leave-One-Site-Out CV."
+        action='store_true',
+        help="Use Leave-One-Site-Out CV to train and fit models."
         )
 
     parser.add_argument(
         "-grid",
         "--gridcv",
-        action = 'store_true',
-        help="Use GridSearch cross validation."
+        action='store_true',
+        help="Use GridSearch cross validation to train and fit models."
         )
+
+    parser.add_argument(
+        "-fitgrid",
+        "--fitgridcv",
+        action='store_true',
+        help="Make predictions with models pre-trainde with GridSearchCV."
+        )
+
+    parser.add_argument(
+        "-fitloso",
+        "--fitlosocv",
+        action='store_true',
+        help="Make predictions with models pre-trainde with LOSO-CV."
+        )
+
+
     parser.add_argument(
         "-neuroharm",
         "--harmonize",
-        action = 'store_true',
+        action='store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
@@ -177,11 +200,13 @@ if __name__ == '__main__':
 
     if args.harmonize:
         nh_flag = args.harmonize
+        df = neuroharmonize(df)
     else:
         nh_flag = args.harmonize
-        df = neuroharmonize(df)
+
     #===========================================================================
     # STEP 2: Split dataset in ASD and CTR, then the latter into train/test set.
+    #         Scaling datasets.
     #===========================================================================
     #splitting the dataset into ASD and CTR groups.
     ASD, CTR = df_split(df)
@@ -196,6 +221,7 @@ if __name__ == '__main__':
     #using fitted scaler to transform test/ASD sets
     df_CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "df_CTR_test")
     df_ASD = test_scaler(ASD, rob_scaler, nh_flag, "df_ASD")
+
     #==========================================
     # STEP 3: Cross Validation on training set.
     #==========================================
@@ -207,23 +233,31 @@ if __name__ == '__main__':
             dir_flag = True
             best_hyp_estimator = model_tuner_cv(df_CTR_train,
                                                 regressor,
-                                                name_regressor)
+                                                name_regressor,
+                                                nh_flag)
 
         if args.losocv:
             #performing Leave-One-Site-Out cross validation
             dir_flag = False
             losocv(df_CTR_train,
-               regressor,
-               name_regressor,
-              nh_flag)
+                  regressor,
+                  name_regressor,
+                  nh_flag)
 
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")
+
     #=======================================================
     # STEP 4: Prediction on test/ASD set and results' plots.
     #=======================================================
     df_list = [df_CTR_train, df_CTR_test, df_ASD]
     #computing predictions with fitted models then plotting results
+    if args.fitgridcv:
+        dir_flag = True
+
+    if args.fitlosocv:
+        dir_flag = False
+
     pred = {}
     for name_regressor in models:
         for dframe in df_list:
@@ -233,22 +267,28 @@ if __name__ == '__main__':
                                                                 dir_flag)
 
             pred[dframe.attrs['name']]=[true_age, predicted_age]
-            plot_scores(true_age, predicted_age, metrics_score,
-                        name_regressor, dframe.attrs['name'])
+
+            plot_scores(true_age,
+                        predicted_age,
+                        metrics_score,
+                        dir_flag,
+                        name_regressor,
+                        dframe.attrs['name'],
+                        )
 
         if nh_flag is True:
-            residual_plot(
-                pred['df_CTR_test_Harmonized'][0],
-                pred['df_CTR_test_Harmonized'][1],
-                pred['df_ASD_Harmonized'][0],
-                pred['df_ASD_Harmonized'][1],
-                name_regressor
-                )
+            residual_plot(pred['df_CTR_test_Harmonized'][0],
+                          pred['df_CTR_test_Harmonized'][1],
+                          pred['df_ASD_Harmonized'][0],
+                          pred['df_ASD_Harmonized'][1],
+                          name_regressor,
+                          dir_flag
+                          )
         else:
-            residual_plot(
-                pred['df_CTR_test_Unharmonized'][0],
-                pred['df_CTR_test_Unharmonized'][1],
-                pred['df_ASD_Unharmonized'][0],
-                pred['df_ASD_Unharmonized'][1],
-                name_regressor
-                    )
+            residual_plot(pred['df_CTR_test_Unharmonized'][0],
+                          pred['df_CTR_test_Unharmonized'][1],
+                          pred['df_ASD_Unharmonized'][0],
+                          pred['df_ASD_Unharmonized'][1],
+                          name_regressor,
+                          dir_flag
+                         )

@@ -1,6 +1,8 @@
 """Module for Deep Dense Network implementation."""
 
 import os
+
+import absl.logging
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -15,10 +17,16 @@ from tensorflow.keras.layers import (Dense,
                                      BatchNormalization)
 from tensorflow.keras.models import Model
 from sklearn.base import BaseEstimator
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
-
+#setting seed for reproducibility
+seed = 42
+np.random.seed(seed)
+tf.keras.utils.set_random_seed(seed)
+tf.keras.backend.clear_session()
+absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+DATAPATH = '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/best_estimator'
 
 ##############################
 class AgeRegressor(BaseEstimator):
@@ -31,12 +39,6 @@ class AgeRegressor(BaseEstimator):
 
     Attributes
     ----------
-
-    learning_rate : float
-                    Learning rate value.
-
-    batch_size : int
-                Batch size value.
 
     dropout_rate: float
                 Dropout rate value to be passed to dropout layer.
@@ -52,42 +54,43 @@ class AgeRegressor(BaseEstimator):
 
     Example
     -------
-         Layer (type)                Output Shape              Param #
+    _________________________________________________________________
+     Layer (type)                Output Shape              Param #
     =================================================================
-     input_57 (InputLayer)       [(None, 128)]             0
+     input_1 (InputLayer)        [(None, 420)]             0
 
-     dense_280 (Dense)           (None, 64)                8256
+     dense (Dense)               (None, 128)               53888
 
-     dense_281 (Dense)           (None, 32)                2080
+     dense_1 (Dense)             (None, 64)                8256
 
-     dense_282 (Dense)           (None, 16)                528
+     dense_2 (Dense)             (None, 64)                4160
 
-     dropout_56 (Dropout)        (None, 16)                0
+     dense_3 (Dense)             (None, 32)                2080
 
-     dense_283 (Dense)           (None, 8)                 136
+     dropout (Dropout)           (None, 32)                0
 
-     batch_normalization_56 (Bat  (None, 8)                32
-     chNormalization)
+     dense_4 (Dense)             (None, 16)                528
 
-     dense_284 (Dense)           (None, 1)                 9
+     dense_5 (Dense)             (None, 1)                 17
 
     =================================================================
-    Total params: 11,041
-    Trainable params: 11,025
-    Non-trainable params: 16
+    Total params: 68,929
+    Trainable params: 68,929
+    Non-trainable params: 0
+
 
     """
     def __init__(self, learning_rate=0.001,
                  batch_size=32, dropout_rate=0.2,
-                 epochs=250, verbose= False):
+                 epochs=100, verbose= False):
         """
         Contructor of AgeRegressor class.
         """
-        super().__init__()
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
         self.dropout_rate = dropout_rate
         self.epochs = epochs
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.dropout_rate = dropout_rate
         self.verbose= verbose
 
     def fit(self, X, y):
@@ -100,22 +103,17 @@ class AgeRegressor(BaseEstimator):
         X : array-like of shape (n_samples, n_features)
             Input datas on which fit will be performed.
 
-        y : array-like of shape (n_samples)
-            Labels for supervised learning.
+        y : array of shape (n_samples,)
+            Array of labels used in train/validation.
 
         """
         inputs = Input(shape=X.shape[1])
         hidden = Dense(128, activation="relu")(inputs)
-        hidden = BatchNormalization()(hidden)
-        #hidden = Dropout(self.dropout_rate)(hidden)
         hidden = Dense(64, activation="relu")(hidden)
-        hidden = BatchNormalization()(hidden)
-        #hidden = Dropout(self.dropout_rate)(hidden)
+        hidden = Dense(64, activation="relu")(hidden)
         hidden = Dense(32, activation="relu")(hidden)
-        hidden = BatchNormalization()(hidden)
         hidden = Dropout(self.dropout_rate)(hidden)
         hidden = Dense(16, activation="relu")(hidden)
-        hidden = BatchNormalization()(hidden)
         outputs = Dense(1, activation="linear")(hidden)
 
         self.model = Model(inputs=inputs, outputs=outputs)
@@ -131,10 +129,11 @@ class AgeRegressor(BaseEstimator):
         callbacks = [EarlyStopping(monitor="val_MAE",
                                    patience=10,
                                    verbose=1),
-                     ReduceLROnPlateau(monitor='val_MAE',
-                                       factor=0.1,
-                                       patience=5,
-                                       verbose=1)]
+                    ReduceLROnPlateau(monitor='val_MAE',
+                                      factor=0.1,
+                                      patience=5,
+                                      verbose=1)
+                    ]
 
         history = self.model.fit(X,
                                  y,
@@ -144,16 +143,15 @@ class AgeRegressor(BaseEstimator):
                 batch_size=self.batch_size,
                 verbose=1)
 
-        print(history.history.keys())
-        '''
-        plt.plot(history.history["loss"])
-        plt.plot(history.history["val_loss"])
-        plt.title('Model loss')
-        plt.ylabel('Loss')
-        plt.xlabel('Epochs')
-        plt.legend(['train', 'validation'], loc='upper right')
-        plt.show()
-        '''
+        if self.verbose:
+            plt.plot(history.history["loss"])
+            plt.plot(history.history["val_loss"])
+            plt.title('Model loss')
+            plt.ylabel('Loss')
+            plt.xlabel('Epochs')
+            plt.legend(['train', 'validation'], loc='upper right')
+            plt.show()
+
         return self.model
 
     def predict(self, X):
@@ -169,7 +167,7 @@ class AgeRegressor(BaseEstimator):
         Returns
         -------
 
-        self.model.predict : ndarray of shape (n_samples,) or (n_samples, n_outputs)
-
+        self.model.predict : array of shape (n_samples,)
+                            Model prediction.
         """
         return self.model.predict(X)

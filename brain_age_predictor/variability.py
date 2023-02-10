@@ -30,13 +30,15 @@ from preprocess import (read_df,
                         train_scaler)
 from brain_age_pred import make_predict
 from predict_helper import plot_scores, residual_plot
+from DDNregressor import AgeRegressor
 
-seed = 42 #setting seed for reproducibility
+#setting seed for reproducibility
+seed = 42
 
 ###################################################
 #MODELS
 models = {
-    #"DDNregressor": AgeRegressor(),
+    "DDNregressor": AgeRegressor(),
     "Linear_Regression": LinearRegression(),
     "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
     "KNeighborsRegressor": KNeighborsRegressor(),
@@ -47,7 +49,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         description="Module for testing variability of results across different sites' dataframes."
-                    +"By default, GridSearch cross validated model will be used."
+
         )
 
     parser.add_argument(
@@ -79,6 +81,13 @@ if __name__ == '__main__':
         help="Use models trained with Leave-One-Site-Out CV."
         )
 
+    parser.add_argument(
+        "-grid",
+        "--gridcv",
+        action = 'store_true',
+        help="Use models trained with GridSearchCV."
+        )
+
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 ############################
@@ -97,21 +106,24 @@ if __name__ == '__main__':
         harm_status = "NeuroHarmonized"
     else:
         nh_flag = args.harmonize
-        harm_status = "Normalized"
+        harm_status = "Unharmonized"
 
     #splitting data in ASD and CTR dataframe, taking only
     #the latter for further analysis.
     ASD, CTR = df_split(df_ABIDE)
     #initializing a scaler and scaling CTR set
     rob_scaler = RobustScaler()
-    df_CTR = train_scaler(CTR, rob_scaler, nh_flag)
+    df_CTR = train_scaler(CTR,
+                          rob_scaler,
+                          nh_flag
+                          )
 
     #creating a list of datas' provenance site.
     site_list = df_CTR.SITE.unique()
 
     if args.losocv:
         dir_flag = False
-    else:
+    if args.gridcv:
         dir_flag = True
     #initializing and filling a dictionary that will contain
     #each different dataframe based on site.
@@ -127,18 +139,27 @@ if __name__ == '__main__':
             PR = []
             for dataframe in df_dict.values():
                     age_predicted, true_age, metrics= make_predict(dataframe,
-                                                                    model_name,
-                                                                    nh_flag,
-                                                                    dir_flag)
+                                                                   model_name,
+                                                                   nh_flag,
+                                                                   dir_flag
+                                                                   )
 
                     appender = lambda metric, key: metric.append(metrics[key])
 
-                    mae = threading.Thread(target=appender, name='MAE'
-                                           , args=(MAE, 'MAE'))
-                    mse = threading.Thread(target=appender, name='MSE',
-                                           args=(MSE, 'MSE'))
-                    pr = threading.Thread(target=appender, name='PR',
-                                          args=(PR, 'PR'))
+                    mae = threading.Thread(target=appender,
+                                           name='MAE',
+                                           args=(MAE, 'MAE')
+                                           )
+
+                    mse = threading.Thread(target=appender,
+                                           name='MSE',
+                                           args=(MSE, 'MSE')
+                                           )
+
+                    pr = threading.Thread(target=appender,
+                                          name='PR',
+                                          args=(PR, 'PR')
+                                          )
 
                     mae.start()
                     mse.start()
@@ -153,7 +174,9 @@ if __name__ == '__main__':
                     #if verbose, plots the fit on each dataframe
                     if args.verbose:
                         plot_scores(true_age, age_predicted,
-                                    metrics, model_name, dataframe.attrs['name'])
+                                    metrics, model_name,
+                                    dataframe.attrs['name']
+                                    )
             #printing a summarizing table with metrics per site
             print(f"MAE[years] for each site with {harm_status} data using {model_name} :")
             table = PrettyTable(["Metrics"]+[x for x in site_list])

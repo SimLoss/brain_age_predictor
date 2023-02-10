@@ -393,7 +393,7 @@ if __name__ == "__main__":
         "--datapath",
         type = str,
         help="Path to the data folder.",
-        default= '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
+        default= 'dataset/FS_features_ABIDE_males.csv'
 
     )
 

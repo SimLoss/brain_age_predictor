@@ -39,7 +39,7 @@ from preprocess import (read_df,
 #setting random state for reproducibility
 seed = 42
 
-def model_tuner_cv(dataframe, model, model_name, harm_flag=False):
+def model_tuner_cv(dataframe, model, model_name, harm_flag):
     """
     Create a pipeline and make (Kfold) cross-validation for hyperparameters'
     optimization.
@@ -71,21 +71,21 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag=False):
     #HYPERPARAMETER'S GRID
     hyparams = {"DDNregressor": {"Feature__k": [ 64, 128, "all"],
                                  "Feature__score_func": [f_regression],
-                                 "Model__epochs": [50, 100],
                                  "Model__dropout_rate": [0.2, 0.3],
-                                 "Model__batch_size": [32, 64, -1],
-                                 "Model__learning_rate": [0.0005, 0.001, 0.0015]
+                                 "Model__batch_size": [32, 64],
                                 },
-                "Linear_Regression":{"Feature__k": [10, 20, 30],
+
+                "Linear_Regression": {"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
-                                    },
-                "Random_Forest_Regressor":{"Feature__k": [10, 20, 30],
-                                      "Feature__score_func": [f_regression],
-                                      "Model__n_estimators": [10, 100, 300],
-                                      "Model__max_features": ["sqrt", "log2"],
-                                      "Model__max_depth": [3, 4, 5, 6],
-                                      "Model__random_state": [42],
-                                          },
+                                     },
+
+                "Random_Forest_Regressor": {"Feature__k": [10, 20, 30],
+                                            "Feature__score_func": [f_regression],
+                                            "Model__n_estimators": [10, 100, 300],
+                                            "Model__max_features": ["sqrt", "log2"],
+                                            "Model__max_depth": [3, 4, 5, 6],
+                                            "Model__random_state": [42],
+                                           },
 
                "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
@@ -94,6 +94,7 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag=False):
                                       "Model__leaf_size": [20, 30, 50],
                                       "Model__p": [1,2],
                                      },
+
                "SVR": {"Feature__k": [10, 20, 30],
                       "Feature__score_func": [f_regression],
                       "Model__kernel": ['linear', 'poly', 'rbf'],
@@ -106,6 +107,13 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag=False):
 
 
     x_train, y_train = drop_covars(dataframe)[0], dataframe['AGE_AT_SCAN']
+
+    try:
+        x_train = x_train.to_numpy()
+        y_train = y_train.to_numpy()
+    except AttributeError:
+        pass
+
     #Pipeline for setting subsequential working steps each time a model is
     #called on some data. It distinguish between train/test/val set, fitting the
     #first and only transforming the latters.
@@ -137,8 +145,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag=False):
     std_mse_val = np.std(model_cv.cv_results_["mean_test_neg_mean_squared_error"])
 
     print("\nCross-Validation: metrics scores (mean values) on validation set:")
-    print(f"MSE:{np.around(MAE_val,3)} \u00B1 {np.around(std_mae_val,3)} [years^2]")
-    print(f"MAE:{np.around(MSE_val,3)} \u00B1 {np.around(std_mse_val,3)} [years]")
+    print(f"MAE:{np.around(MAE_val,3)} \u00B1 {np.around(std_mae_val,3)} [years^2]")
+    print(f"MSE:{np.around(MSE_val,3)} \u00B1 {np.around(std_mse_val,3)} [years]")
 
     #saving results on disk folder "../best_estimator"
     if harm_flag is True:
@@ -151,4 +159,4 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag=False):
         ) as file:
             pickle.dump(model_best, file)
     except IOError:
-        print("Folder \'/best_estimator\' not found.")
+        print("Folder \'/best_estimator/grid\' not found.")

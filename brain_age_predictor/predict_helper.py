@@ -28,9 +28,13 @@ from preprocess import (read_df,
                         df_split,
                         drop_covars)
 
-def plot_scores(y_test, age_predicted, metrics,
-                model_name="Regressor model",
-                dataframe_name="Dataset metrics"):
+def plot_scores(y_test,
+                age_predicted,
+            metrics,
+            directory_flag,
+            model_name="Regressor model",
+            dataframe_name="Dataset metrics",
+            ):
     """
     Plots the results of the predictions vs ground truth with related metrics
     scores.
@@ -75,7 +79,7 @@ def plot_scores(y_test, age_predicted, metrics,
     plt.yticks(fontsize=18)
     plt.xticks(fontsize=18)
     plt.legend(loc="upper left", fontsize=14)
-    anchored_text = AnchoredText(f"{dataframe_name} metrics:"
+    anchored_text = AnchoredText(f"{dataframe_name} results:"
                                  f"\nMAE= {mae} [years]"
                                  f"\n MSE= {mse} [years^2]"
                                  f"\n PR= {pr}",
@@ -86,12 +90,19 @@ def plot_scores(y_test, age_predicted, metrics,
                                 )
     ax.add_artist(anchored_text)
 
-    plt.savefig(
-        f"images/{dataframe_name}_{model_name}.png",
-        dpi=200,
-        format="png",
-        bbox_inches="tight",
-    )
+    if directory_flag is True:
+        plt.savefig(
+                    f"images/gridCV/{dataframe_name}_{model_name}.png",
+                    dpi=200,
+                    format="png",
+                    bbox_inches="tight",
+                    )
+    else:
+        plt.savefig(f"images/losoCV/{dataframe_name}_{model_name}.png",
+                    dpi=200,
+                    format="png",
+                    bbox_inches="tight",
+                    )
 
     plt.show()
 
@@ -99,7 +110,8 @@ def residual_plot(true_age1,
                   pred_age1,
                   true_age2,
                   pred_age2,
-                  model_name):
+                  model_name,
+                  directory_flag):
     """
     Computes the difference(delta) between predicted age find with a
     specific model and true age on control test and ASD dataframes.
@@ -148,9 +160,16 @@ def residual_plot(true_age1,
     plt.tick_params(axis="x", labelsize=18)
     plt.tick_params(axis="y", labelsize=18)
     plt.legend(loc="upper right", fontsize=14)
-    plt.savefig(
-        f"images/delta_pred_{model_name}.png",
-        dpi=200,
-        format="png")
+
+    if directory_flag is True:
+        plt.savefig(
+            f"images/gridCV/delta_pred_{model_name}.png",
+            dpi=200,
+            format="png")
+    else:
+        plt.savefig(
+            f"images/losoCV/delta_pred_{model_name}.png",
+            dpi=200,
+            format="png")
 
     plt.show()
