@@ -80,19 +80,24 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     ----------
     dataframe : pandas dataframe
                 Input dataframe to make predictions on.
+
     model_name : string
                 Name of the chosen model.
+
     harm_flag : boolean, DEFAULT=False.
                 Flag indicating if the dataframe has been previously harmonized.
+
     cv_flag : boolean, DEFAULT=False.
                 Flag indicating which kind of cross validatio has been performed.
                 True: GridSearCV, False: Leave-Out-Single-Site CV.
     Returns
    -------
-    age_predicted:  array-like
+    predicted_age : array-like
                     Array containing the predicted age of each subject.
+
     y_test : pandas dataframe
              Pandas dataframe column containing the ground truth age.
+
     score_metrics : dictionary
                     Dictionary containing names of metrics as keys and result
                     metrics for a specific model as values.
@@ -102,6 +107,7 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
         saved_name = model_name + '_Harmonized'
     else:
         saved_name = model_name + '_Unharmonized'
+
     #selecting the model to load to make prediction
     if cv_flag is True:
         try:
@@ -109,14 +115,14 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
                 model_fit = pickle.load(file)
         except FileNotFoundError:
             print("Directory or file not found. best models  must be contained"
-                    +f" in grid folder")
+                    +" in grid folder")
     else:
         try:
             with open(f"best_estimator/loso/{saved_name}.pkl", "rb") as file:
                 model_fit = pickle.load(file)
         except FileNotFoundError:
             print("Directory or file not found. best models  must be contained"
-                    +f" in loso folder")
+                    +" in loso folder")
     #prediction
     x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
@@ -213,7 +219,7 @@ if __name__ == '__main__':
     #split CTR dataset into train and test.
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
-                                           random_state=42)
+                                           random_state=seed)
     #initializing a scaler and scaling train set
     rob_scaler = RobustScaler()
     df_CTR_train = train_scaler(CTR_train, rob_scaler, nh_flag)

@@ -40,52 +40,46 @@ def read_df(dataset_path):
     -------
         df: pandas DataFrame
             Dataframe containing the features of each subject by rows.
-    """
+"""
+    logging.info("Reading dataset..")
+    dataframe = pd.read_csv(dataset_path, sep = ';')
+    dataframe.attrs['name'] = "Unharmonized ABIDE dataframe"
+    site = []
+    ind = []
+    for idx in dataframe.FILE_ID:
+        ind.append(idx.split('_')[-1])
+        site.append(idx.split('_')[0])
+    #adding site column to dataframe and using FILE_ID as index
+    dataframe['SITE'] = site
+    dataframe['FILE_ID'] = ind
+    dataframe = dataframe.set_index('FILE_ID')
 
-    try:
-        logging.info("Reading dataset..")
-        dataframe = pd.read_csv(dataset_path, sep = ';')
-        dataframe.attrs['name'] = "Unharmonized ABIDE dataframe"
-        site = []
-        ind = []
-        for idx in dataframe.FILE_ID:
-            ind.append(idx.split('_')[-1])
-            site.append(idx.split('_')[0])
-        #adding site column to dataframe and using FILE_ID as index
-        dataframe['SITE'] = site
-        dataframe['FILE_ID'] = ind
-        dataframe = dataframe.set_index('FILE_ID')
-    except OSError:
-            print("Invalid file or path.")
     return dataframe
 
 def data_info(dataframe):
     """
-    Shows some useful information about the feature's dataset.
+    Shows some useful information about dataset's features.
 
     Parameters
     ----------
         dataframe: pandas DataFrame
              Dataframe containing the features of each subject
 
-
-    Returns
-    -------
-    None
     """
+    n
     print(f"Dataframe info:")
     print(dataframe.info(memory_usage = False))
     print(f"\n\nDataframe size: {dataframe.size} elements" )
     print(f"\n\nNumber of ASD cases:"
-        +f" {dataframe[dataframe.DX_GROUP == 1].AGE_AT_SCAN.count()}")
+          f" {len(dataframe[dataframe.DX_GROUP==1].index)}")
     print(f"Number of Controls:"
-        +f" {dataframe[dataframe.DX_GROUP == -1].AGE_AT_SCAN.count()}")
-    print(f"Mean Age in ASD set: "
-        +f"{dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.mean()}"
-        +f" \u00B1 {dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.std()}")
+          f" {len(dataframe[dataframe.DX_GROUP==-1].index)}")
+    print(f"Mean Age in ASD set:"
+         f"{dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.mean()}"
+         f" \u00B1 {dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.std()}")
     print(f"Mean Age in CTR set: "
-        +f"{dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.mean()}"
-        +f" \u00B1 {dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.std()}")
+         f"{dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.mean()}"
+         f" \u00B1 {dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.std()}")
     print("\n\nShowing the first and last 10 rows of the dataframe.. ")
     print(dataframe.head(10))
     print(dataframe.tail(10))
@@ -179,7 +173,6 @@ def plot_histogram(dataframe, feature):
         plt.ylabel("Subjects", fontsize=18)
         plt.xlabel(f"{feature}", fontsize=18)
         plt.title("N. subjects per provenance site", fontsize=20)
-        plt.show()
 
     else:
         dataframe.hist([feature], figsize=(8, 8), bins=100, grid = True)
@@ -188,13 +181,14 @@ def plot_histogram(dataframe, feature):
         plt.yticks(fontsize=14)
         plt.xticks(fontsize=14)
         plt.title(f"Histogram of n. subjects VS {feature}", fontsize=20)
-        plt.show()
 
     plt.savefig(f"data_plots/{feature}_histogram.png",
                 dpi=300,
                 format="png",
                 bbox_inches="tight"
                 )
+
+    plt.show()
 
 def plot_box(dataframe, feat_x, feat_y):
     """
@@ -328,9 +322,9 @@ def train_scaler(dataframe, scaler, harm_flag=False):
         scaled_df[column] = dataframe[column].values
 
     if harm_flag is True:
-        scaled_df.attrs['name'] = 'df_CTR_train_Harmonized'
+        scaled_df.attrs['name'] = 'CTR_train_Harmonized'
     else:
-        scaled_df.attrs['name'] = 'df_CTR_train_Unharmonized'
+        scaled_df.attrs['name'] = 'CTR_train_Unharmonized'
 
     return scaled_df
 
@@ -393,7 +387,7 @@ if __name__ == "__main__":
         "--datapath",
         type = str,
         help="Path to the data folder.",
-        default= 'dataset/FS_features_ABIDE_males.csv'
+        default= 'dataset/FS_features_ABIDE_malesi.csv'
 
     )
 

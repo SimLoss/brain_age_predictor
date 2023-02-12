@@ -133,7 +133,7 @@ if __name__ == '__main__':
         df_dict[site].attrs['name'] = f'{site}'
 
     #nested for loop making prediction on each model and each sites' dataframe
-    for model_name in models.keys():
+    for model_name in models:
             MAE = []
             MSE = []
             PR = []
@@ -145,6 +145,9 @@ if __name__ == '__main__':
                                                                    )
 
                     appender = lambda metric, key: metric.append(metrics[key])
+
+        #            threads = [thr.Thread(target=appender, args=())]
+
 
                     mae = threading.Thread(target=appender,
                                            name='MAE',
@@ -171,18 +174,34 @@ if __name__ == '__main__':
 
                     mean_s = np.mean(MAE)
                     std_s = np.std(MAE)
+
+
                     #if verbose, plots the fit on each dataframe
                     if args.verbose:
                         plot_scores(true_age, age_predicted,
                                     metrics, model_name,
                                     dataframe.attrs['name']
                                     )
+
             #printing a summarizing table with metrics per site
-            print(f"MAE[years] for each site with {harm_status} data using {model_name} :")
+            print(f"Metrics for each site with {harm_status} dataset using {model_name} :")
             table = PrettyTable(["Metrics"]+[x for x in site_list])
             table.add_row(["MAE"]+[x for x in MAE])
             table.add_row(["MSE"] + [x for x in MSE])
             table.add_row(["PR"] + [x for x in PR])
+
+            if dir_flag is True:
+                data = table.get_string()
+                with open( f'metrics/grid/metrics_{model_name}_{harm_status}.txt',
+                           'w') as file:
+                        file.write(data)
+
+            else:
+                data = table.get_string()
+                with open( f'metrics/loso/metrics_{model_name}_{harm_status}.txt',
+                           'w') as file:
+                        file.write(data)
+
             print(table)
             #making a comparative bar plot of MAE for site
             fig, ax = plt.subplots(figsize=(22, 16))

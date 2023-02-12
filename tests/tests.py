@@ -5,7 +5,7 @@ import sys
 import warnings
 import pandas as pd
 from sklearn.preprocessing import RobustScaler
-
+from sklearn.linear_model import LinearRegression
 
 #to run locally
 #package_name = "../brain_age_predictor"
@@ -18,7 +18,8 @@ from preprocess import (read_df,
                         df_split,
                         drop_covars,
                         normalization,
-                        train_scaler)
+                        train_scaler,
+                        neuroharmonize)
 from brain_age_pred import make_predict
 
 class TestBrainAge(unittest.TestCase):
@@ -93,12 +94,15 @@ class TestBrainAge(unittest.TestCase):
                                 harm_flag=True)
         self.assertNotEqual(scaled_df['TotalWhiteVol'].to_numpy().all(),
                             dataframe['TotalWhiteVol'].to_numpy().all())
-    def test_make_predict(self):
+
+    def test_neuroharmonize(self):
+        """
+        Test for neuroharmonize function.
+        """
         dataframe = read_df(self.data)
-        predicted_age, true_age, metrics_score = make_predict(dataframe,
-                                                              Linear_Regression,
-                                                              harm_flag=False,
-                                                              cv_flag=False)
-        self.assert
+        add_WhiteVol_feature(dataframe)
+        df_neuro_harmonized = neuroharmonize(dataframe)
+        self.assertTrue(df_neuro_harmonized['rh_MeanThickness'].to_numpy().mean() >
+                        dataframe['rh_MeanThickness'].to_numpy().mean())
 if __name__ == "__main__":
     unittest.main()

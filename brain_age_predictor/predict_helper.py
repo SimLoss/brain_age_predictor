@@ -33,7 +33,7 @@ def plot_scores(y_test,
             metrics,
             directory_flag,
             model_name="Regressor model",
-            dataframe_name="Dataset metrics",
+            dataframe_name="Dataframe",
             ):
     """
     Plots the results of the predictions vs ground truth with related metrics

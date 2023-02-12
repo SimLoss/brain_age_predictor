@@ -50,7 +50,6 @@ def losocv(dataframe, model, model_name,
     mae_val = np.array([])
     pr_val = np.array([])
 
-
     #cross-validation with Leave-One-Group-Out; data grouped by site
     logocv = LeaveOneGroupOut()
 
@@ -60,9 +59,12 @@ def losocv(dataframe, model, model_name,
         y[val_index] = np.squeeze(y[val_index])
         predict_y_val = model_fit.predict(x[val_index])
 
-        mse_val = np.append(mse_val, mean_squared_error(y[val_index], predict_y_val))
-        mae_val = np.append(mae_val, mean_absolute_error(y[val_index], predict_y_val))
-        pr_val = np.append(pr_val, pearsonr(y[val_index], predict_y_val)[0])
+        mse_val = np.append(mse_val, mean_squared_error(y[val_index],
+                                                        predict_y_val))
+        mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
+                                                        predict_y_val))
+        pr_val = np.append(pr_val, pearsonr(y[val_index],
+                                            predict_y_val)[0])
 
         #Print the model's parameters after cross validation.
     if verbose:
