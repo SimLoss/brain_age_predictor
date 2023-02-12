@@ -1,0 +1,12 @@
+keras
+matplotlib
+neuroHarmonize
+numpy
+pandas
+prettytable
+scikit-learn
+scipy
+seaborn
+sphinx
+statsmodels
+tensorflow
