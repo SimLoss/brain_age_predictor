@@ -10,6 +10,8 @@ Welcome to Brain Age Predictor's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   install
+
 
 
 Indices and tables
