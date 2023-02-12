@@ -104,5 +104,6 @@ class TestBrainAge(unittest.TestCase):
         df_neuro_harmonized = neuroharmonize(dataframe)
         self.assertTrue(df_neuro_harmonized['rh_MeanThickness'].to_numpy().mean() >
                         dataframe['rh_MeanThickness'].to_numpy().mean())
+
 if __name__ == "__main__":
     unittest.main()
