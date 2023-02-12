@@ -1,5 +1,4 @@
-# pylint: disable= import-error, too-many-arguments, too-many-arguments, invalid-name
-#
+# pylint: disable= import-error, too-many-arguments, invalid-name
 
 """
 Main module in which different models are being compared on ABIDE dataset.
@@ -12,11 +11,10 @@ harmonization won't be performed.
 
 Workflow:
 1. Read the ABIDE dataframe and make some preprocessing.
-2. Split dataframe into cases and controls.
-3. Splitting CTR set into train/test; choosing a single site as test.
-4. Cross validation on training set.
-5. Predict on site test set.
-6. Repeat for another site.
+2. Split dataframe into cases and controls and subsequently split CTR set into
+   train/test.
+3. Cross validation on training set.
+4. Predict on site test set.
 
 For each splitting, all plots will be saved in "images_SITE" folder.
 """
@@ -25,7 +23,6 @@ import sys
 import argparse
 from time import perf_counter
 
-import tensorflow
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -37,6 +34,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import RobustScaler
+from prettytable import PrettyTable
 
 from preprocess import (read_df,
                         add_WhiteVol_feature,
@@ -66,7 +64,7 @@ models = {
     }
 
 
-def plot_scores(true_age,
+def plot_scores_on_site(true_age,
                 age_predicted,
                 metrics,
                 model_name,
@@ -190,14 +188,15 @@ def predict_on_site(x_pred,
                     }
 
     if harm_flag is True:
-        header = "MSE\t" + "MAE\t" + "PR\t"
-        metrics = np.array([score_metrics['MSE'],
-                            score_metrics['MAE'],
-                            score_metrics['PR']])
-        metrics = np.array(metrics).T
-        np.savetxt( f"metrics/site/{site_name}_{model_name}_Harmonized.txt",
-                    metrics,
-                    header=header)
+        table = PrettyTable(["Metrics"]+[site_name])
+        table.add_row(["MAE"]+[score_metrics['MAE']])
+        table.add_row(["MSE"] + [score_metrics['MSE']])
+        table.add_row(["PR"] + [score_metrics['PR']])
+        data_table = table.get_string()
+
+        with open( f"metrics/site/{site_name}_{model_name}_Harmonized.txt",
+                   'w') as file:
+            file.write(data_table)
     else:
         header = "MSE\t" + "MAE\t" + "PR\t"
         metrics = np.array([score_metrics['MSE'],
@@ -238,10 +237,17 @@ if __name__ == '__main__':
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
-
+    #=============================================================
+    # STEP 1: Read the ABIDE dataframe and make some preprocessing.
+    #============================================================
     #read dataset from path
-    datapath = args.datapath
-    df = read_df(datapath)
+    try:
+        datapath = args.datapath
+        df = read_df(datapath)
+    except Exception as exc:
+        raise FileNotFoundError('dataset/FS_features_ABIDE_males.csv'
+                            'must be in your repository!') from exc
+
 
     #removing subject with age>40 as they're poorly represented
     df = df[df.AGE_AT_SCAN<40]
@@ -255,10 +261,15 @@ if __name__ == '__main__':
     else:
         nh_flag = args.harmonize
     start_time = perf_counter()
-    #splitting the dataset into ASD and CTR groups.
+    #=======================================================
+    # STEP 2: Splitting the dataset into ASD and CTR groups.
+    #=======================================================
+
     ASD, CTR = df_split(df)
+
     #creating a list of sites'names
     site_list = CTR.SITE.unique()
+
     #Looping on models and sites for fitting and evaluating the scores
     for site in site_list:
         #split CTR dataset into train and test: one site will be used as test, the
@@ -288,8 +299,9 @@ if __name__ == '__main__':
             mse_val = np.array([])
             mae_val = np.array([])
             pr_val = np.array([])
-
-            #K-fold cross-validation
+            #================================
+            # STEP 3: KFold cross validation.
+            #================================
             cv = KFold(n_splits=5, shuffle=True, random_state=SEED)
 
             for train_index, val_index in cv.split(x, y):
@@ -304,13 +316,14 @@ if __name__ == '__main__':
                                                                 predict_y_val))
                 pr_val = np.append(pr_val, pearsonr(y[val_index],
                                                     predict_y_val)[0])
-            #validation metrics
+
             print(f"\nCross-Validation: {name_model} metric scores on validation set.")
             print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
             print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
             print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
-
-            #make prediction
+            #==================================
+            # STEP 4: Predict on site test set.
+            #==================================
             age_predicted_train, score_metrics_train = predict_on_site(x,
                                                                        y,
                                                                        model_fit,
@@ -319,7 +332,7 @@ if __name__ == '__main__':
                                                                        nh_flag
                                                                        )
             #plot results
-            plot_scores(y,
+            plot_scores_on_site(y,
                         age_predicted_train,
                         score_metrics_train,
                         name_model,
@@ -334,8 +347,7 @@ if __name__ == '__main__':
                                                                      name_model,
                                                                      nh_flag
                                                                      )
-            #plot results
-            plot_scores(y_test,
+            plot_scores_on_site(y_test,
                         age_predicted_test,
                         score_metrics_test,
                         name_model,

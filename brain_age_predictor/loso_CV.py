@@ -1,9 +1,10 @@
+# pylint: disable= import-error, invalid-name, too-many-locals
+
 """Module implementing Leave-One-Site-Out cross validation"""
 import pickle
 
 import numpy as np
 from sklearn.model_selection import LeaveOneGroupOut
-from sklearn.preprocessing import RobustScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from scipy.stats import pearsonr
 
@@ -55,7 +56,6 @@ def losocv(dataframe, model, model_name,
 
     for train_index, val_index in logocv.split(x, y, site_label):
         model_fit = model.fit(x[train_index], y[train_index])
-        predict_y_train = model_fit.predict(x[train_index])
         y[val_index] = np.squeeze(y[val_index])
         predict_y_val = model_fit.predict(x[val_index])
 
@@ -85,5 +85,5 @@ def losocv(dataframe, model, model_name,
             f'best_estimator/loso/{saved_name}.pkl', 'wb'
         ) as file:
             pickle.dump(model_fit, file)
-    except IOError:
-        print("Folder \'/best_estimator\' not found.")
+    except Exception as exc:
+        raise IOError("Folder \'/best_estimator/loso\' not found.") from exc

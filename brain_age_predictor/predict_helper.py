@@ -1,40 +1,19 @@
+# pylint: disable= too-many-arguments, invalid-name
+
 """
 Helper module containing useful function for making plots of final scores.
 """
-import os
-import pickle
-from time import perf_counter
-
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
-from scipy.stats import pearsonr
-from sklearn.linear_model import LinearRegression, SGDRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from sklearn.svm import SVR
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import train_test_split, cross_validate
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import RobustScaler, StandardScaler
-from sklearn.feature_selection import f_regression
-
-from preprocess import (read_df,
-                        add_WhiteVol_feature,
-                        neuroharmonize,
-                        df_split,
-                        drop_covars)
 
 def plot_scores(y_test,
                 age_predicted,
-            metrics,
-            directory_flag,
-            model_name="Regressor model",
-            dataframe_name="Dataframe",
-            ):
+                metrics,
+                directory_flag,
+                model_name="Regressor model",
+                dataframe_name="Dataframe",
+                ):
     """
     Plots the results of the predictions vs ground truth with related metrics
     scores.

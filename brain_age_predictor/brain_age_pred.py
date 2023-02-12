@@ -44,7 +44,7 @@ from preprocess import (read_df,
                         drop_covars,
                         test_scaler,
                         train_scaler)
-from GridCV import model_tuner_cv
+from grid_CV import model_tuner_cv
 from loso_CV import losocv
 from predict_helper import plot_scores, residual_plot
 from DDNregressor import AgeRegressor
@@ -188,8 +188,13 @@ if __name__ == '__main__':
     #=============================================================
     # STEP 1: Read the ABIDE dataframe and make some preprocessing.
     #============================================================
-    datapath = args.datapath
-    df = read_df(datapath)
+    try:
+        datapath = args.datapath
+        df = read_df(datapath)
+    except Exception as exc:
+        raise FileNotFoundError('dataset/FS_features_ABIDE_males.csv'
+                            'must be in your repository!') from exc
+
 
     #removing subject with age>40 as they're poorly represented
     df = df[df.AGE_AT_SCAN<40]
@@ -213,7 +218,7 @@ if __name__ == '__main__':
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
                                            random_state=SEED)
-    #initializing a scaler and scaling train set
+    #scaling train set
     rob_scaler = RobustScaler()
     df_CTR_train = train_scaler(CTR_train, rob_scaler, NH_FLAG)
 
@@ -257,6 +262,11 @@ if __name__ == '__main__':
     if args.fitlosocv:
         DIR_FLAG = False
 
+
+    if not (args.losocv or args.gridcv or args.fitgridcv or args.fitlosocv):
+        parser.error('Required one of the following arguments: -grid, -loso,'
+                    ' -fitgrid, -fitloso')
+    #make prediction and plot scores
     pred = {}
     for name_regressor in models:
         for dframe in df_list:

@@ -1,3 +1,6 @@
+# pylint: disable= import-error, line-too-long, invalid-name, redefined-outer-name
+# pylint: disable= unbalanced-tuple-unpacking, dangerous-default-value
+
 """ This module provides some function to read, explore and preprocess an input
     dataframe cointaining a set of features. Specifically, it allows to:
     - read data from a file and build a dataframe;
@@ -9,17 +12,14 @@
 It may be also used as a standalone program to explore the dataset.
 """
 import sys
-import os
 import logging
-import inspect
 import argparse
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler, RobustScaler
+from sklearn.preprocessing import MinMaxScaler
 from neuroHarmonize import harmonizationLearn
 
 
@@ -40,20 +40,24 @@ def read_df(dataset_path):
     -------
         df: pandas DataFrame
             Dataframe containing the features of each subject by rows.
-"""
-    logging.info("Reading dataset..")
-    dataframe = pd.read_csv(dataset_path, sep = ';')
-    dataframe.attrs['name'] = "Unharmonized ABIDE dataframe"
-    site = []
-    ind = []
-    for idx in dataframe.FILE_ID:
-        ind.append(idx.split('_')[-1])
-        site.append(idx.split('_')[0])
-    #adding site column to dataframe and using FILE_ID as index
-    dataframe['SITE'] = site
-    dataframe['FILE_ID'] = ind
-    dataframe = dataframe.set_index('FILE_ID')
+    """
+    try:
+        logging.info("Reading dataset..")
+        dataframe = pd.read_csv(dataset_path, sep = ';')
+        dataframe.attrs['name'] = "Unharmonized ABIDE dataframe"
+        site = []
+        ind = []
+        for idx in dataframe.FILE_ID:
+            ind.append(idx.split('_')[-1])
+            site.append(idx.split('_')[0])
+        #adding site column to dataframe and using FILE_ID as index
+        dataframe['SITE'] = site
+        dataframe['FILE_ID'] = ind
+        dataframe = dataframe.set_index('FILE_ID')
 
+    except Exception as exc:
+        raise FileNotFoundError('dataset/FS_features_ABIDE_males.csv'
+                                'must be in your repository!') from exc
     return dataframe
 
 def data_info(dataframe):
@@ -66,8 +70,7 @@ def data_info(dataframe):
              Dataframe containing the features of each subject
 
     """
-    n
-    print(f"Dataframe info:")
+    print("Dataframe info:")
     print(dataframe.info(memory_usage = False))
     print(f"\n\nDataframe size: {dataframe.size} elements" )
     print(f"\n\nNumber of ASD cases:"
@@ -244,7 +247,7 @@ def normalization(dataframe):
                           columns = drop_df.columns, index = drop_df.index
                           )
     for column in drop_list:
-            norm_df[column] = dataframe[column].values
+        norm_df[column] = dataframe[column].values
     norm_df.attrs['name'] = "Normalized dataframe"
 
     return norm_df
@@ -387,7 +390,7 @@ if __name__ == "__main__":
         "--datapath",
         type = str,
         help="Path to the data folder.",
-        default= 'dataset/FS_features_ABIDE_malesi.csv'
+        default= 'dataset/FS_features_ABIDE_males.csv'
 
     )
 
@@ -421,7 +424,7 @@ if __name__ == "__main__":
         "--boxplot",
         type= str,
         nargs=2,
-        help= "Draw and save a box plot to show distributions of two specified feature (e. g. feat_x feat_y). ",
+        help= "Draw and save a box plot to show distributions of two specified feature (e. g. feat_x feat_y). "
     )
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 

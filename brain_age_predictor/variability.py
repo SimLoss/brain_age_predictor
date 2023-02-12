@@ -1,46 +1,42 @@
+# pylint: disable= import-error, unnecessary-comprehension, invalid-name
+# pylint: disable= C3001,
+
 """
 Module testing the reproducibility of the results on each site's dataframe.
 The analysis will be performed on control subjects.
 """
 import sys
-import os
-import warnings
-import pickle
-from time import perf_counter
 import argparse
 import threading
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from matplotlib.offsetbox import AnchoredText
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import RobustScaler, StandardScaler
+from sklearn.preprocessing import RobustScaler
 from prettytable import PrettyTable
 
 from preprocess import (read_df,
-                        drop_covars,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        test_scaler,
                         train_scaler)
 from brain_age_pred import make_predict
-from predict_helper import plot_scores, residual_plot
+from predict_helper import plot_scores
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
-seed = 42
+SEED = 42
 
 ###################################################
 #MODELS
 models = {
     "DDNregressor": AgeRegressor(),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
+    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
     "KNeighborsRegressor": KNeighborsRegressor(),
     "SVR": SVR(),
     }
@@ -57,7 +53,7 @@ if __name__ == '__main__':
         "--datapath",
         type = str,
         help="Path to the data folder.",
-        default= '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/dataset/FS_features_ABIDE_males.csv'
+        default= 'dataset/FS_features_ABIDE_males.csv'
         )
 
     parser.add_argument(
@@ -91,8 +87,12 @@ if __name__ == '__main__':
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 ############################
-    datapath = args.datapath
-    df_ABIDE = read_df(datapath)
+    try:
+        datapath = args.datapath
+        df_ABIDE = read_df(datapath)
+    except Exception as exc:
+        raise FileNotFoundError('dataset/FS_features_ABIDE_males.csv'
+                            'must be in your repository!') from exc
 
     #removing subject with age>40 as they're poorly represented
     df_ABIDE = df_ABIDE[df_ABIDE.AGE_AT_SCAN<40]
@@ -103,10 +103,10 @@ if __name__ == '__main__':
     if args.harmonize:
         nh_flag = args.harmonize
         df_ABIDE = neuroharmonize(df_ABIDE)
-        harm_status = "NeuroHarmonized"
+        HARM_STATUS = "NeuroHarmonized"
     else:
         nh_flag = args.harmonize
-        harm_status = "Unharmonized"
+        HARM_STATUS = "Unharmonized"
 
     #splitting data in ASD and CTR dataframe, taking only
     #the latter for further analysis.
@@ -122,9 +122,11 @@ if __name__ == '__main__':
     site_list = df_CTR.SITE.unique()
 
     if args.losocv:
-        dir_flag = False
+        DIR_FLAG = False
     if args.gridcv:
-        dir_flag = True
+        DIR_FLAG = True
+    if not (args.losocv or args.gridcv):
+        parser.error('Required one of the following arguments: -grid or -loso')
     #initializing and filling a dictionary that will contain
     #each different dataframe based on site.
     df_dict = {}
@@ -134,93 +136,89 @@ if __name__ == '__main__':
 
     #nested for loop making prediction on each model and each sites' dataframe
     for model_name in models:
-            MAE = []
-            MSE = []
-            PR = []
-            for dataframe in df_dict.values():
-                    age_predicted, true_age, metrics= make_predict(dataframe,
-                                                                   model_name,
-                                                                   nh_flag,
-                                                                   dir_flag
-                                                                   )
+        MAE = []
+        MSE = []
+        PR = []
+        for dataframe in df_dict.values():
+            age_predicted, true_age, metrics= make_predict(dataframe,
+                                                           model_name,
+                                                           nh_flag,
+                                                           DIR_FLAG
+                                                           )
 
-                    appender = lambda metric, key: metric.append(metrics[key])
+            appender = lambda metric, key: metric.append(metrics[key])
 
-        #            threads = [thr.Thread(target=appender, args=())]
+            mae = threading.Thread(target=appender,
+                                   name='MAE',
+                                   args=(MAE, 'MAE')
+                                   )
 
+            mse = threading.Thread(target=appender,
+                                   name='MSE',
+                                   args=(MSE, 'MSE')
+                                   )
 
-                    mae = threading.Thread(target=appender,
-                                           name='MAE',
-                                           args=(MAE, 'MAE')
-                                           )
-
-                    mse = threading.Thread(target=appender,
-                                           name='MSE',
-                                           args=(MSE, 'MSE')
-                                           )
-
-                    pr = threading.Thread(target=appender,
-                                          name='PR',
-                                          args=(PR, 'PR')
-                                          )
-
-                    mae.start()
-                    mse.start()
-                    pr.start()
-
-                    mae.join()
-                    mse.join()
-                    pr.join()
-
-                    mean_s = np.mean(MAE)
-                    std_s = np.std(MAE)
+            pr = threading.Thread(target=appender,
+                                  name='PR',
+                                  args=(PR, 'PR')
+                                  )
 
 
-                    #if verbose, plots the fit on each dataframe
-                    if args.verbose:
-                        plot_scores(true_age, age_predicted,
-                                    metrics, model_name,
-                                    dataframe.attrs['name']
+            threads = [mae, mse, pr]
+            for thr in threads:
+                thr.start()
+
+            for thread in threads:
+                thr.join()
+
+            mean_s = np.mean(MAE)
+            std_s = np.std(MAE)
+
+            #if verbose, plots the fit on each dataframe
+            if args.verbose:
+                plot_scores(true_age, age_predicted,
+                            metrics, model_name,
+                            dataframe.attrs['name']
+                            )
+
+        #printing a summarizing table with metrics per site
+        print(f"Metrics for each site with {HARM_STATUS} dataset using {model_name} :")
+        table = PrettyTable(["Metrics"]+[x for x in site_list])
+        table.add_row(["MAE"]+[x for x in MAE])
+        table.add_row(["MSE"] + [x for x in MSE])
+        table.add_row(["PR"] + [x for x in PR])
+
+        if DIR_FLAG is True:
+            data_table = table.get_string()
+            with open( f'metrics/grid/metrics_{model_name}_{HARM_STATUS}.txt',
+                       'w', encoding="utf-8") as file:
+                file.write(data_table)
+
+        else:
+            data_table = table.get_string()
+            with open( f'metrics/loso/metrics_{model_name}_{HARM_STATUS}.txt',
+                       'w', encoding="utf-8") as file:
+                file.write(data_table)
+
+        print(table)
+        #making a comparative bar plot of MAE for site
+        fig, ax = plt.subplots(figsize=(22, 16))
+        plt.bar(site_list, MAE)
+        plt.xlabel("Sites", fontsize=20)
+        plt.ylabel("Mean Absolute Error", fontsize=20)
+        plt.title(f"MAE using {model_name} of {HARM_STATUS} sites' data ", fontsize = 20)
+        plt.yticks(fontsize=18)
+        plt.xticks(fontsize=18, rotation=50)
+        anchored_text = AnchoredText(f"MAE:{mean_s:.3f} \u00B1 {std_s:.3f} [years]",
+                                     loc=1,
+                                     prop=dict(fontweight="bold", size=20),
+                                     borderpad=0.,
+                                     frameon=True,
                                     )
-
-            #printing a summarizing table with metrics per site
-            print(f"Metrics for each site with {harm_status} dataset using {model_name} :")
-            table = PrettyTable(["Metrics"]+[x for x in site_list])
-            table.add_row(["MAE"]+[x for x in MAE])
-            table.add_row(["MSE"] + [x for x in MSE])
-            table.add_row(["PR"] + [x for x in PR])
-
-            if dir_flag is True:
-                data = table.get_string()
-                with open( f'metrics/grid/metrics_{model_name}_{harm_status}.txt',
-                           'w') as file:
-                        file.write(data)
-
-            else:
-                data = table.get_string()
-                with open( f'metrics/loso/metrics_{model_name}_{harm_status}.txt',
-                           'w') as file:
-                        file.write(data)
-
-            print(table)
-            #making a comparative bar plot of MAE for site
-            fig, ax = plt.subplots(figsize=(22, 16))
-            plt.bar(site_list, MAE)
-            plt.xlabel("Sites", fontsize=20)
-            plt.ylabel("Mean Absolute Error", fontsize=20)
-            plt.title(f"MAE using {model_name} of {harm_status} sites' data ", fontsize = 20)
-            plt.yticks(fontsize=18)
-            plt.xticks(fontsize=18, rotation=50)
-            anchored_text = AnchoredText(f"MAE:{mean_s:.3f} \u00B1 {std_s:.3f} [years]",
-                                         loc=1,
-                                         prop=dict(fontweight="bold", size=20),
-                                         borderpad=0.,
-                                         frameon=True,
-                                        )
-            ax.add_artist(anchored_text)
-            plt.savefig(f"images/Sites {harm_status} with {model_name}.png",
-                dpi=300,
-                format="png",
-                bbox_inches="tight"
-                )
-            plt.show()
+        ax.add_artist(anchored_text)
+        plt.savefig(f"images/Sites {HARM_STATUS} with {model_name}.png",
+            dpi=300,
+            format="png",
+            bbox_inches="tight"
+            )
+        plt.show()

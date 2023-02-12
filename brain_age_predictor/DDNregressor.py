@@ -1,3 +1,5 @@
+# pylint: disable=locally-disabled, import-error, too-many-arguments, invalid-name
+
 """Module for Deep Dense Network implementation."""
 
 import os
@@ -5,28 +7,20 @@ import os
 import absl.logging
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
-from sklearn.metrics import  mean_absolute_error
-from sklearn.model_selection import (train_test_split,
-                                     GridSearchCV,
-                                     StratifiedKFold)
 import tensorflow as tf
-from tensorflow.keras.layers import (Dense,
-                                     Dropout,
-                                     Input,
-                                     BatchNormalization)
-from tensorflow.keras.models import Model
+from keras.layers import Dense, Dropout, Input
+from keras.models import Model
 from sklearn.base import BaseEstimator
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 #setting seed for reproducibility
-seed = 42
-np.random.seed(seed)
-tf.keras.utils.set_random_seed(seed)
+SEED = 42
+np.random.seed(SEED)
+tf.keras.utils.set_random_seed(SEED)
+#clearing previous keras sessions
 tf.keras.backend.clear_session()
 absl.logging.set_verbosity(absl.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-DATAPATH = '/home/cannolo/Scrivania/Università/Dispense_di_Computing/Progetto/brain_age_predictor_main/brain_age_predictor/best_estimator'
 
 ##############################
 class AgeRegressor(BaseEstimator):
