@@ -1,5 +1,4 @@
-# pylint: disable=locally-disabled, line-too-long, too-many-arguments, too-many-locals
-#pylint: disable=C0103
+# pylint: disable=locally-disabled, import-error
 """
 Main module in which different models are being compared on ABIDE dataset using
 different cross validation: GridSearchCV and Leave-One-Site-Out CV.
@@ -28,21 +27,15 @@ import argparse
 from time import perf_counter
 
 import tensorflow
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
-from sklearn.feature_selection import f_regression
 
 from preprocess import (read_df,
                         add_WhiteVol_feature,
@@ -56,9 +49,9 @@ from loso_CV import losocv
 from predict_helper import plot_scores, residual_plot
 from DDNregressor import AgeRegressor
 
-#setting seed for reproducibility
-seed = 42
-np.random.seed(seed)
+#setting SEED for reproducibility
+SEED = 42
+np.random.seed(SEED)
 #shutting down annoying warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #clear tensorflow session at each run
@@ -67,7 +60,7 @@ tensorflow.keras.backend.clear_session()
 models = {
     "DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
+    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
     "KNeighborsRegressor": KNeighborsRegressor(),
     "SVR": SVR(),
     }
@@ -88,8 +81,8 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
                 Flag indicating if the dataframe has been previously harmonized.
 
     cv_flag : boolean, DEFAULT=False.
-                Flag indicating which kind of cross validatio has been performed.
-                True: GridSearCV, False: Leave-Out-Single-Site CV.
+            Flag indicating which kind of cross validatio has been performed.
+            True: GridSearCV, False: Leave-Out-Single-Site CV.
     Returns
    -------
     predicted_age : array-like
@@ -113,16 +106,16 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
         try:
             with open(f"best_estimator/grid/{saved_name}.pkl", "rb") as file:
                 model_fit = pickle.load(file)
-        except FileNotFoundError:
-            print("Directory or file not found. best models  must be contained"
-                    +" in grid folder")
+        except Exception as exc:
+            raise FileNotFoundError("Directory or file not found."
+                    +"Models must be trained first.") from exc
     else:
         try:
             with open(f"best_estimator/loso/{saved_name}.pkl", "rb") as file:
                 model_fit = pickle.load(file)
-        except FileNotFoundError:
-            print("Directory or file not found. best models  must be contained"
-                    +" in loso folder")
+        except:
+            raise FileNotFoundError("Directory or file not found."
+                    +"Models must be trained first.") from exc
     #prediction
     x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
@@ -205,10 +198,10 @@ if __name__ == '__main__':
     add_WhiteVol_feature(df)
 
     if args.harmonize:
-        nh_flag = args.harmonize
+        NH_FLAG = args.harmonize
         df = neuroharmonize(df)
     else:
-        nh_flag = args.harmonize
+        NH_FLAG = args.harmonize
 
     #===========================================================================
     # STEP 2: Split dataset in ASD and CTR, then the latter into train/test set.
@@ -219,14 +212,14 @@ if __name__ == '__main__':
     #split CTR dataset into train and test.
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
-                                           random_state=seed)
+                                           random_state=SEED)
     #initializing a scaler and scaling train set
     rob_scaler = RobustScaler()
-    df_CTR_train = train_scaler(CTR_train, rob_scaler, nh_flag)
+    df_CTR_train = train_scaler(CTR_train, rob_scaler, NH_FLAG)
 
     #using fitted scaler to transform test/ASD sets
-    df_CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "df_CTR_test")
-    df_ASD = test_scaler(ASD, rob_scaler, nh_flag, "df_ASD")
+    df_CTR_test = test_scaler(CTR_test, rob_scaler, NH_FLAG, "df_CTR_test")
+    df_ASD = test_scaler(ASD, rob_scaler, NH_FLAG, "df_ASD")
 
     #==========================================
     # STEP 3: Cross Validation on training set.
@@ -236,19 +229,19 @@ if __name__ == '__main__':
 
         if args.gridcv:
             #Performing GridSearch Cross Validation
-            dir_flag = True
+            DIR_FLAG = True
             best_hyp_estimator = model_tuner_cv(df_CTR_train,
                                                 regressor,
                                                 name_regressor,
-                                                nh_flag)
+                                                NH_FLAG)
 
         if args.losocv:
             #performing Leave-One-Site-Out cross validation
-            dir_flag = False
+            DIR_FLAG = False
             losocv(df_CTR_train,
                   regressor,
                   name_regressor,
-                  nh_flag)
+                  NH_FLAG)
 
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")
@@ -259,36 +252,36 @@ if __name__ == '__main__':
     df_list = [df_CTR_train, df_CTR_test, df_ASD]
     #computing predictions with fitted models then plotting results
     if args.fitgridcv:
-        dir_flag = True
+        DIR_FLAG = True
 
     if args.fitlosocv:
-        dir_flag = False
+        DIR_FLAG = False
 
     pred = {}
     for name_regressor in models:
         for dframe in df_list:
             predicted_age, true_age, metrics_score= make_predict(dframe,
                                                                 name_regressor,
-                                                                nh_flag,
-                                                                dir_flag)
+                                                                NH_FLAG,
+                                                                DIR_FLAG)
 
             pred[dframe.attrs['name']]=[true_age, predicted_age]
 
             plot_scores(true_age,
                         predicted_age,
                         metrics_score,
-                        dir_flag,
+                        DIR_FLAG,
                         name_regressor,
                         dframe.attrs['name'],
                         )
 
-        if nh_flag is True:
+        if NH_FLAG is True:
             residual_plot(pred['df_CTR_test_Harmonized'][0],
                           pred['df_CTR_test_Harmonized'][1],
                           pred['df_ASD_Harmonized'][0],
                           pred['df_ASD_Harmonized'][1],
                           name_regressor,
-                          dir_flag
+                          DIR_FLAG
                           )
         else:
             residual_plot(pred['df_CTR_test_Unharmonized'][0],
@@ -296,5 +289,5 @@ if __name__ == '__main__':
                           pred['df_ASD_Unharmonized'][0],
                           pred['df_ASD_Unharmonized'][1],
                           name_regressor,
-                          dir_flag
+                          DIR_FLAG
                          )

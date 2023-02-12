@@ -1,5 +1,6 @@
-# pylint: disable=locally-disabled, line-too-long, too-many-arguments, too-many-locals
-#pylint: disable=C0103
+# pylint: disable= import-error, too-many-arguments, too-many-arguments, invalid-name
+#
+
 """
 Main module in which different models are being compared on ABIDE dataset.
 Training, fit and prediction will be performed using datas from a specific
@@ -12,8 +13,7 @@ harmonization won't be performed.
 Workflow:
 1. Read the ABIDE dataframe and make some preprocessing.
 2. Split dataframe into cases and controls.
-3. Splitting CTR set into train/test and choosing a
-   single site as test.
+3. Splitting CTR set into train/test; choosing a single site as test.
 4. Cross validation on training set.
 5. Predict on site test set.
 6. Repeat for another site.
@@ -22,12 +22,10 @@ For each splitting, all plots will be saved in "images_SITE" folder.
 """
 import os
 import sys
-import pickle
 import argparse
 from time import perf_counter
 
 import tensorflow
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -37,11 +35,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import train_test_split, KFold, cross_validate
-from sklearn.pipeline import Pipeline
+from sklearn.model_selection import KFold
 from sklearn.preprocessing import RobustScaler
-from sklearn.feature_selection import f_regression
 
 from preprocess import (read_df,
                         add_WhiteVol_feature,
@@ -53,12 +48,10 @@ from preprocess import (read_df,
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
-seed = 42
-np.random.seed(seed)
+SEED = 42
+np.random.seed(SEED)
 #shutting down annoying warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-#clear tensorflow session at each run
-tensorflow.keras.backend.clear_session()
 
 #SCORINGS
 scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
@@ -67,13 +60,13 @@ scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
 models = {
     "DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=seed),
+    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
     "KNeighborsRegressor": KNeighborsRegressor(),
     "SVR": SVR(),
     }
 
 
-def plot_scores(y_test,
+def plot_scores(true_age,
                 age_predicted,
                 metrics,
                 model_name,
@@ -87,29 +80,29 @@ def plot_scores(y_test,
     Parameters
     ----------
 
-    y_test : pandas dataframe
+    true_age : pandas dataframe
              Pandas dataframe column containing the ground truth age.
 
     age_predicted : array-like
                     Array containing the predicted age of each subject.
 
     metrics : dictionary
-            Dictionary containing names of metrics as keys and result metrics .
-            for a specific model as values.
+             Dictionary containing names of metrics as keys and result metrics .
+             for a specific model as values.
 
     model_name : string
                 Model's name.
 
     site_name : string
-                Site's name.
+               Site's name.
 
     dataframe_name : string
-                Dataframe's name, DEFAULT="Train dataset".
+                    Dataframe's name, DEFAULT="Train dataset".
     """
     mse, mae, pr = metrics["MSE"], metrics["MAE"], metrics["PR"]
 
     ax = plt.subplots(figsize=(8, 8))[1]
-    ax.scatter(y_test, age_predicted,
+    ax.scatter(true_age, age_predicted,
                marker="*", c="r",
                label="True age"
               )
@@ -146,7 +139,12 @@ def plot_scores(y_test,
                 )
 
 
-def predict_on_site(x_pred , y_pred, model, site_name, model_name, harm_flag):
+def predict_on_site(x_pred,
+                    y_pred,
+                    model,
+                    site_name,
+                    model_name,
+                    harm_flag):
     """
     Plots the results of the predictions vs ground truth with related metrics
     scores.
@@ -256,7 +254,7 @@ if __name__ == '__main__':
         df = neuroharmonize(df)
     else:
         nh_flag = args.harmonize
-
+    start_time = perf_counter()
     #splitting the dataset into ASD and CTR groups.
     ASD, CTR = df_split(df)
     #creating a list of sites'names
@@ -265,7 +263,7 @@ if __name__ == '__main__':
     for site in site_list:
         #split CTR dataset into train and test: one site will be used as test, the
         #rest as training
-        for model_name, model in models.items():
+        for name_model, regressor in models.items():
             print(f"\nUsing {site} as test set.")
             CTR_test = CTR.loc[CTR['SITE'] == f'{site}']
             CTR_train = CTR.drop(CTR[CTR.SITE == f'{site}'].index, axis=0)
@@ -292,10 +290,10 @@ if __name__ == '__main__':
             pr_val = np.array([])
 
             #K-fold cross-validation
-            cv = KFold(n_splits=5, shuffle=True, random_state=seed)
+            cv = KFold(n_splits=5, shuffle=True, random_state=SEED)
 
             for train_index, val_index in cv.split(x, y):
-                model_fit = model.fit(x[train_index], y[train_index])
+                model_fit = regressor.fit(x[train_index], y[train_index])
                 predict_y_train = model_fit.predict(x[train_index])
                 y[val_index] = np.squeeze(y[val_index])
                 predict_y_val = model_fit.predict(x[val_index])
@@ -307,7 +305,7 @@ if __name__ == '__main__':
                 pr_val = np.append(pr_val, pearsonr(y[val_index],
                                                     predict_y_val)[0])
             #validation metrics
-            print(f"\nCross-Validation: {model_name} metric scores on validation set.")
+            print(f"\nCross-Validation: {name_model} metric scores on validation set.")
             print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
             print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
             print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
@@ -317,14 +315,14 @@ if __name__ == '__main__':
                                                                        y,
                                                                        model_fit,
                                                                        site,
-                                                                       model_name,
+                                                                       name_model,
                                                                        nh_flag
                                                                        )
             #plot results
             plot_scores(y,
                         age_predicted_train,
                         score_metrics_train,
-                        model_name,
+                        name_model,
                         site,
                         CTR_train.attrs['name'],
                         )
@@ -333,14 +331,17 @@ if __name__ == '__main__':
                                                                      y_test,
                                                                      model_fit,
                                                                      site,
-                                                                     model_name,
+                                                                     name_model,
                                                                      nh_flag
                                                                      )
             #plot results
             plot_scores(y_test,
                         age_predicted_test,
                         score_metrics_test,
-                        model_name,
+                        name_model,
                         site,
                         CTR_test.attrs['name'],
                         )
+
+    end_time = perf_counter()
+    print(f"Elapsed time for prediction: {end_time-start_time}")
