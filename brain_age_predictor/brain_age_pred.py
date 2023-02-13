@@ -9,16 +9,17 @@ Best estimators found are saved in local and used to make prediction of age
 on test set.
 
 Workflow:
-1. Read the ABIDE dataframe and make some preprocessing.
-2. Split dataframe into cases and controls, the latter (CTR) in
-    train and test set. Scale the datasets.
-3. Cross validation on training set.
-   Best models setting will be saved in "best estimator" folder.
-4. Best models are used to predict age on CTR train and test set and, finally,
-   on ASD dataset for a comparison of prediction between healthy subjects and
-   the ones with ASD.
+    1. Read the ABIDE dataframe and make some preprocessing.
+    2. Split dataframe into cases and controls, the latter (CTR) in
+        train and test set. Scale the datasets.
+    3. Cross validation on training set.
+       Best models setting will be saved in "best estimator" folder.
+    4. Best models are used to predict age on CTR train and test set and, finally,
+       on ASD dataset for a comparison of prediction between healthy subjects and
+       the ones with ASD.
 
 For each dataset, all plots will be saved in "images" folder.
+
 """
 import os
 import sys
@@ -68,10 +69,12 @@ models = {
 def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     """
     Loads pre-trained model to make prediction on "unseen" test datas.
+
     Stores the score metrics of a prediction.
+
     Parameters
     ----------
-    dataframe : pandas dataframe
+    dataframe : pandas dataframe.
                 Input dataframe to make predictions on.
 
     model_name : string
@@ -83,15 +86,16 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     cv_flag : boolean, DEFAULT=False.
             Flag indicating which kind of cross validatio has been performed.
             True: GridSearCV, False: Leave-Out-Single-Site CV.
+
     Returns
-   -------
-    predicted_age : array-like
+    -------
+    predicted_age : array-like.
                     Array containing the predicted age of each subject.
 
-    y_test : pandas dataframe
+    y_test : pandas dataframe.
              Pandas dataframe column containing the ground truth age.
 
-    score_metrics : dictionary
+    score_metrics : dictionary.
                     Dictionary containing names of metrics as keys and result
                     metrics for a specific model as values.
     """

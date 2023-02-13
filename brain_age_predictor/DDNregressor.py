@@ -1,6 +1,8 @@
 # pylint: disable=locally-disabled, import-error, too-many-arguments, invalid-name
 
-"""Module for Deep Dense Network implementation."""
+"""
+Module for Deep Dense Network implementation.
+"""
 
 import os
 
@@ -26,28 +28,31 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 class AgeRegressor(BaseEstimator):
     """
     Class describing a Deep Dense Network used as a linear regressor.
+
     The class inherits from BaseEstimator for an easy implementation into
     scikit's pipeline and grid search.
     Linear regression is performed using 'mean absolute error' as loss func
     to minimize.
 
-    Attributes
+    Parameters
     ----------
 
     dropout_rate: float
-                Dropout rate value to be passed to dropout layer.
+                  Dropout rate value to be passed to dropout layer.
 
     epochs: int
             Number of iterations on entire dataset.
 
     verbose: bool, DEFAULT=False
-            If True, prints the model's summary.
+             If True, prints the model's summary.
 
+    Attributes
+    ----------
     model : object
             Compiled model.
 
-    Example
-    -------
+    Examples
+    --------
     _________________________________________________________________
      Layer (type)                Output Shape              Param #
     =================================================================
@@ -71,7 +76,7 @@ class AgeRegressor(BaseEstimator):
     Total params: 68,929
     Trainable params: 68,929
     Non-trainable params: 0
-
+    _________________________________________________________________
 
     """
     def __init__(self, learning_rate=0.001,
