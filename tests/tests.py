@@ -2,26 +2,22 @@ import unittest
 from pathlib import Path
 import os
 import sys
-import warnings
-import pandas as pd
-from sklearn.preprocessing import RobustScaler
-from sklearn.linear_model import LinearRegression
+
 
 #to run locally
 #package_name = "../brain_age_predictor"
-sys.path.insert(0, str(Path(os.getcwd()).parent))
+#sys.path.insert(0, str(Path(os.getcwd()).parent))
 package_name = "../brain_age_predictor"
 
 sys.path.insert(0, package_name)
 
-from preprocess import (read_df,
-                        add_WhiteVol_feature,
+from preprocess import (readf_df,
                         df_split,
+                        add_WhiteVol_feature,
                         drop_covars,
                         normalization,
                         train_scaler,
                         neuroharmonize)
-from brain_age_pred import make_predict
 
 class TestBrainAge(unittest.TestCase):
     """
