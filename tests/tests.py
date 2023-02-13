@@ -11,13 +11,7 @@ package_name = "../brain_age_predictor"
 
 sys.path.insert(0, package_name)
 
-from brain_age_predictor.preprocess import (readf_df,
-                                            df_split,
-                                            add_WhiteVol_feature,
-                                            drop_covars,
-                                            normalization,
-                                            train_scaler,
-                                            neuroharmonize)
+from brain_age_predictor.brain_age_predictor import preprocess
 
 class TestBrainAge(unittest.TestCase):
     """
