@@ -1,6 +1,7 @@
 keras
 matplotlib
 neuroHarmonize
+nibabel
 numpy
 pandas
 prettytable
