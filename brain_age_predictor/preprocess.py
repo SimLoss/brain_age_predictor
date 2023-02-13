@@ -20,6 +20,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+from scipy.stats import sem
 from neuroHarmonize import harmonizationLearn
 
 
@@ -77,12 +78,15 @@ def data_info(dataframe):
           f" {len(dataframe[dataframe.DX_GROUP==1].index)}")
     print(f"Number of Controls:"
           f" {len(dataframe[dataframe.DX_GROUP==-1].index)}")
-    print(f"Mean Age in ASD set:"
+    print(f"Mean age in ASD set:"
          f"{dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.mean()}"
-         f" \u00B1 {dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.std()}")
-    print(f"Mean Age in CTR set: "
+         f" \u00B1 {sem(dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values)}")
+    print(f"Mean age in CTR set: "
          f"{dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.mean()}"
-         f" \u00B1 {dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.std()}")
+         f" \u00B1 {sem(dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values)}")
+    print(f"Total mean age:"
+         f"{dataframe['AGE_AT_SCAN'].values.mean()}"
+         f" \u00B1 {sem(dataframe['AGE_AT_SCAN'].values)}")
     print("\n\nShowing the first and last 10 rows of the dataframe.. ")
     print(dataframe.head(10))
     print(dataframe.tail(10))
