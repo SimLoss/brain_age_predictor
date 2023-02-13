@@ -9,6 +9,7 @@ from sklearn.linear_model import LinearRegression
 
 #to run locally
 #package_name = "../brain_age_predictor"
+sys.path.insert(0, str(Path(os.getcwd()).parent))
 package_name = "../brain_age_predictor"
 
 sys.path.insert(0, package_name)
