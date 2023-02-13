@@ -6,11 +6,11 @@ from sklearn.preprocessing import RobustScaler
 #to run locally
 #package_name = "../brain_age_predictor"
 sys.path.insert(0, str(Path(os.getcwd()).parent))
-package_name = "../brain_age_predictor"
+package_name = "brain_age_predictor"
 
 sys.path.insert(0, package_name)
 
-from preprocess import (read_df,
+from brain_age_predictor.preprocess import (read_df,
                         df_split,
                         add_WhiteVol_feature,
                         drop_covars,
