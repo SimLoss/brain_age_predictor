@@ -1,6 +1,6 @@
 [![Documentation Status](https://readthedocs.org/projects/brain-age-predictor/badge/?version=latest)](https://brain-age-predictor.readthedocs.io/en/latest/?badge=latest)
 [![GitHub license](https://img.shields.io/github/license/pastiera/brain_age_predictor)](https://github.com/pastiera/brain_age_predictor/blob/main/LICENSE)
-
+[![CircleCI](https://circleci.com/gh/Pastiera/brain_age_predictor.svg?style=svg)](https://circleci.com/gh/Pastiera/brain_age_predictor)
 ## brain_age_predictor
 
 This repository contains a project for Computing Methods for Experimental Physics and Data Analysis course.
@@ -76,7 +76,19 @@ Two different pipelines has been followed based on Leave-One-Site-Out approach:
 
 
 ## Requirements
-To use our Python codes the following packages are needed: keras, matplotlib, neuroCombat, neuroHarmonize, nibabel, numpy, pandas, scikit-learn, scipy, seaborn, sphinx, statsmodels, tensorflow.
+To use these Python codes the following packages are required: 
+keras
+matplotlib
+neuroHarmonize
+numpy
+pandas
+prettytable
+scikit-learn
+scipy
+seaborn
+sphinx
+statsmodels
+tensorflow
 
 ##Usage
 - **1**) Download the repository from github
