@@ -256,6 +256,7 @@ def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
     """
     Utility function to normalize test set using only transform
     method from the scaler.
+
     Parameters
     ----------
     dataframe : pandas dataframe
@@ -271,11 +272,12 @@ def test_scaler(dataframe, scaler, harm_flag=False, dataframe_name="Dataframe"):
                 DEFAULT=False.
 
     dataframe_name : string
-                    Name of the data
+                     Name of the data
     Returns
     -------
     scaled_df : pandas dataframe.
-            Normalized dataframe.
+                Normalized dataframe.
+
     """
     drop_test, drop_list = drop_covars(dataframe)
     scaled_df = pd.DataFrame(scaler.transform(drop_test))
@@ -294,6 +296,7 @@ def train_scaler(dataframe, scaler, harm_flag=False):
     """
     Utility function to normalize test set using only transform
     method from the scaler.
+
     Parameters
     ----------
     dataframe : pandas dataframe
@@ -309,11 +312,12 @@ def train_scaler(dataframe, scaler, harm_flag=False):
                 DEFAULT=False.
 
     dataframe_name : string
-                    Name of the data
+                     Name of the data
     Returns
     -------
     scaled_df : pandas dataframe.
-            Normalized dataframe.
+                Normalized dataframe.
+
     """
 
     drop_train, drop_list = drop_covars(dataframe)
