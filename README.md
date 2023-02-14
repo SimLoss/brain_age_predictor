@@ -72,7 +72,7 @@ Two different pipelines has been followed based on Leave-One-Site-Out approach:
 1. Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
 2. Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
-##Results
+## Results
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
 
 
