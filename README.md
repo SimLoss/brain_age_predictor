@@ -67,7 +67,7 @@ The analysis has been conducted using 'unharmonized' and 'harmonized' datas.
 #Method
 The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1], models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences by residual plots are shown in the results avalaible in /images folder.
 
-#Pipelines
+# Pipelines
 Two different pipelines has been followed based on Leave-One-Site-Out approach:
 1. Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
 2. Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
