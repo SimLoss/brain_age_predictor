@@ -8,10 +8,10 @@ This repository contains a project for Computing Methods for Experimental Physic
 The aim is to design and implement a regression model to predict the age of the healthy subjects from brain data features extracted from T1-weighted MRI images. Datas are taken from to the well known [ABIDE] (http://fcon_1000.projects.nitrc.org/indi/abide/abide_I.html) dataset, in which are present subjects affected by Autism Spectre Disorder (ASD) and healthy control subjects (CTR).
 
 The algorithm allows to:
--visualize and explore ABIDE datas;
--make data harmonization by site;
--train different regression models using different cross validation;
--confront two alternative approaches to the problem.
+- visualize and explore ABIDE datas;
+- make data harmonization by site;
+- train different regression models using different cross validation;
+- confront two alternative approaches to the problem.
 
 The repository is structured as follows:
 ```
