@@ -39,7 +39,7 @@ brain_age_predictor/
     └── test.py
     └── __init__.py
 ```
-## Data
+# Data
 
 Datas from ABIDE (Autism Brain Imaging Data Exchange) are contained in .csv files inside brain_age_predictor/dataset folder and are handled with Pandas. This dataset contains 419 brain morphological features (volumes, thickness, area, etc.) of different brain segmented area (via Freesurfer sofware) belonging to 915 male subjects (451 cases, 464 controls) pespectively with with total mean age of 
 17.47 ± 0.36 and 17.38 ± 0.40. 
@@ -52,7 +52,7 @@ while also age distribution across sites change quite drastically as shown in th
 <img src="brain_age_predictor/images/AGE_distribution_box plot.png" width="700"/>
 
 Since subjects with age> 40 years are poorly represented, they have been cutted out during pre-processing.
-## Site harmonization
+# Site harmonization
 
 On top of these differencies, another important confounding factor is related to the effect of the different acquisition sites on the features. To mitigate this effect, the state-of-art harmonization tool [neuroHarmonize](https://github.com/rpomponio/neuroHarmonize) implemented by [Pomponio et al.](https://www.sciencedirect.com/science/article/pii/S1053811919310419?via%3Dihub) has been used.
 <img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="700"/>
@@ -62,17 +62,17 @@ neuroHarmonize corrects differences introducted by multi-site image acquisition 
 This is particulary important as different sites have different age distribution.
 The analysis has been conducted using 'unharmonized' and 'harmonized' datas.
 
-## Analysis
+# Analysis
 
-#Method
+## Method
 The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1], models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences by residual plots are shown in the results avalaible in /images folder.
 
-# Pipelines
+## Pipelines
 Two different pipelines has been followed based on Leave-One-Site-Out approach:
 1. Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
 2. Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
-## Results
+# Results
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
 
 
@@ -80,7 +80,7 @@ Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation c
 <img src="brain_age_predictor/images/losoCV/df_CTR_test_Harmonized_Random_Forest_Regressor.png" width="700"/>
 
 
-## Requirements
+# Requirements
 To use these Python codes the following packages are required: 
 keras
 matplotlib
@@ -95,7 +95,7 @@ sphinx
 statsmodels
 tensorflow
 
-## Usage
+# Usage
 
 - **1**) Download the repository from github
 ```git clone https://github.com/Pastiera/brain_age_predictor```
