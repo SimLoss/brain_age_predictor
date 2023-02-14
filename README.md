@@ -65,12 +65,12 @@ The analysis has been conducted using 'unharmonized' and 'harmonized' datas.
 # Analysis
 
 ## Method
-The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1], models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences through residual plots are shown in the results avalaible in /images folder.
-Being very poorly represented (<5%), subjects with age >40 years have been discarded from the present study.
+The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1](https://pubmed.ncbi.nlm.nih.gov/20920490/), models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences through residual plots are shown in the results avalaible in /images folder.
+Being very poorly represented (<4%), subjects with age >40 years have been discarded from the present study, similarly to other studies in the field.[2](https://academic.oup.com/cercor/article/26/4/1440/2366467)
 
 ## Pipelines
 Two different pipelines have been followed based on Leave-One-Site-Out approach:
-- **1**)  Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
+- **1**)  Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[3](https://pubmed.ncbi.nlm.nih.gov/34924987/)[4](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
 - **2**)  Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
 # Results
@@ -127,5 +127,8 @@ Results' plots are collected in 'images' or 'images_site' folder, while fitted m
 ## References
 
 - [1] [Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.](https://pubmed.ncbi.nlm.nih.gov/20920490/)
-- [2] [Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.](https://pubmed.ncbi.nlm.nih.gov/34924987/)
-- [3] [Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018).](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
+- [2] [Haar, S., Berman, S., Behrmann, M., Dinstein, I., 2016. Anatomical abnormalities in
+autism? Cereb. Cortex 26 (4), 1440–1452.](https://academic.oup.com/cercor/article/26/4/1440/2366467)
+- [3] [Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.](https://pubmed.ncbi.nlm.nih.gov/34924987/)
+- [4] [Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018).](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
+
