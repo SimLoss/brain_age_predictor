@@ -43,11 +43,11 @@ brain_age_predictor/
 
 Datas from ABIDE (Autism Brain Imaging Data Exchange) are contained in .csv files inside brain_age_predictor/dataset folder and are handled with Pandas. This dataset contains 419 brain morphological features (volumes, thickness, area, etc.) of different brain segmented area (via Freesurfer sofware) belonging to 915 male subjects (451 cases, 464 controls) pespectively with with total mean age of 
 17.47 ± 0.36 and 17.38 ± 0.40. 
-The age distribution of subjects, although heterogeneous between CTR and ASD groups, presents quite a skewed profile:
+The age distribution of subjects, although heterogeneous between CTR and ASD groups, presents quite a skewed profile, as shown below:
 
 <img src="brain_age_predictor/images/AGE_AT_SCAN_histogram.png" width="700"/>
 
-while also age distribution across sites change quite drastically as shown in the following boxplot:
+Also age distribution across sites change quite drastically as shown in the following boxplot:
 
 <img src="brain_age_predictor/images/AGE_distribution_box plot.png" width="700"/>
 
@@ -65,12 +65,13 @@ The analysis has been conducted using 'unharmonized' and 'harmonized' datas.
 # Analysis
 
 ## Method
-The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1], models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences by residual plots are shown in the results avalaible in /images folder.
+The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1], models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences through residual plots are shown in the results avalaible in /images folder.
+Being very poorly represented (<5%), subjects with age >40 years have been discarded from the present study.
 
 ## Pipelines
-Two different pipelines has been followed based on Leave-One-Site-Out approach:
-1. Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
-2. Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
+Two different pipelines have been followed based on Leave-One-Site-Out approach:
+- **1**)  Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
+- **2**)  Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
 # Results
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
@@ -82,18 +83,18 @@ Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation c
 
 # Requirements
 To use these Python codes the following packages are required: 
-keras
-matplotlib
-neuroHarmonize
-numpy
-pandas
-prettytable
-scikit-learn
-scipy
-seaborn
-sphinx
-statsmodels
-tensorflow
+- keras
+- matplotlib
+- neuroHarmonize
+- numpy
+- pandas
+- prettytable
+- scikit-learn
+- scipy
+- seaborn
+- sphinx
+- statsmodels
+- tensorflow
 
 # Usage
 
