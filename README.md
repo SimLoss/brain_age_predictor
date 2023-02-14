@@ -76,7 +76,7 @@ Both scikitlearn's models and a custom neural network have been used.
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
 
 
-<img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="500"/><img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="500"/>
+<img src="brain_age_predictor/images/Sites NeuroHarmonized with Random_Forest_Regressor.png" width="500"/><img src="brain_age_predictor/images/df_CTR_test_Harmonized_Random_Forest_Regressor.png" width="500"/>
 
 
 ## Requirements
@@ -118,7 +118,7 @@ optional arguments:
                         Use NeuroHarmonize to harmonize data by provenance site.
 
 ```
-```
+
 Pre-trained model in /best_estimator can be run for reproducibility and newly trained model will be saved in the same folder. If no fitted models is already present in this folder, one shall firstly run ```brain_age_pred.py``` to use ```variability.py```.
 Results' plots are collected in 'images' or 'images_site' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics' folders.
 
