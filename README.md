@@ -125,6 +125,6 @@ Results' plots are collected in 'images' or 'images_site' folder, while fitted m
 
 ## References
 
--[1] [Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.](https://pubmed.ncbi.nlm.nih.gov/20920490/)
--[2] [Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.](https://pubmed.ncbi.nlm.nih.gov/34924987/)
--[3] [Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018).](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
+- [1] [Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.](https://pubmed.ncbi.nlm.nih.gov/20920490/)
+- [2] [Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.](https://pubmed.ncbi.nlm.nih.gov/34924987/)
+- [3] [Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018).](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
