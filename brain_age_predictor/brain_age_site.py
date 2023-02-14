@@ -61,80 +61,6 @@ models = {
     "SVR": SVR(),
     }
 
-
-def plot_scores_on_site(true_age,
-                age_predicted,
-                metrics,
-                model_name,
-                site_name,
-                dataframe_name
-                ):
-    """
-    Plots the results of the predictions vs ground truth with related metrics
-    scores.
-
-    Parameters
-    ----------
-
-    true_age : pandas dataframe
-             Pandas dataframe column containing the ground truth age.
-
-    age_predicted : array-like
-                    Array containing the predicted age of each subject.
-
-    metrics : dictionary
-             Dictionary containing names of metrics as keys and result metrics .
-             for a specific model as values.
-
-    model_name : string
-                Model's name.
-
-    site_name : string
-               Site's name.
-
-    dataframe_name : string
-                    Dataframe's name, DEFAULT="Train dataset".
-    """
-    mse, mae, pr = metrics["MSE"], metrics["MAE"], metrics["PR"]
-
-    ax = plt.subplots(figsize=(8, 8))[1]
-    ax.scatter(true_age, age_predicted,
-               marker="*", c="r",
-               label="True age"
-              )
-    plt.xlabel("Ground truth Age [years]", fontsize=18)
-    plt.ylabel("Predicted Age [years]", fontsize=18)
-    plt.plot(
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        c="b",
-        label="Prediction",
-    )
-    plt.title(f"Predictions using {model_name} model",
-              fontsize=20)
-    plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18)
-    plt.legend(loc="upper left", fontsize=14)
-    anchored_text = AnchoredText(f"Test set: {site_name}"
-                                 f"\n{dataframe_name} results:"
-                                 f"\n MAE= {mae} [years]"
-                                 f"\n MSE= {mse} [years^2]"
-                                 f"\n PR= {pr}",
-                                 loc=4,
-                                 borderpad=0.,
-                                 frameon=True,
-                                 prop=dict(fontweight="bold"),
-                                )
-    ax.add_artist(anchored_text)
-
-    plt.savefig(
-                f"images_SITE/{dataframe_name}_{model_name}_{site_name}.png",
-                dpi=200,
-                format="png",
-                bbox_inches="tight",
-                )
-
-
 def predict_on_site(x_pred,
                     y_pred,
                     model,
@@ -184,7 +110,7 @@ def predict_on_site(x_pred,
                                         age_predicted)[0],
                                 3)
                     }
-
+    MAE = score_metrics['MAE']
     if harm_flag is True:
         table = PrettyTable(["Metrics"]+[site_name])
         table.add_row(["MAE"]+[score_metrics['MAE']])
@@ -196,16 +122,16 @@ def predict_on_site(x_pred,
                    'w') as file:
             file.write(data_table)
     else:
-        header = "MSE\t" + "MAE\t" + "PR\t"
-        metrics = np.array([score_metrics['MSE'],
-                            score_metrics['MAE'],
-                            score_metrics['PR']])
-        metrics = np.array(metrics).T
-        np.savetxt( f"metrics/site/{site_name}_{model_name}_Unharmonized.txt",
-                    metrics,
-                    header=header)
+        table = PrettyTable(["Metrics"]+[site_name])
+        table.add_row(["MAE"]+[score_metrics['MAE']])
+        table.add_row(["MSE"] + [score_metrics['MSE']])
+        table.add_row(["PR"] + [score_metrics['PR']])
+        data_table = table.get_string()
+        with open( f"metrics/site/{site_name}_{model_name}_Unharmonized.txt",
+                   'w') as file:
+            file.write(data_table)
 
-    return age_predicted, score_metrics
+    return age_predicted, MAE
 
 ########################## MAIN
 if __name__ == '__main__':
@@ -255,9 +181,11 @@ if __name__ == '__main__':
 
     if args.harmonize:
         nh_flag = args.harmonize
+        HARM_STATUS = 'Harmonized'
         df = neuroharmonize(df)
     else:
         nh_flag = args.harmonize
+        HARM_STATUS = 'Unharmonized'
     start_time = perf_counter()
     #=======================================================
     # STEP 2: Splitting the dataset into ASD and CTR groups.
@@ -269,10 +197,11 @@ if __name__ == '__main__':
     site_list = CTR.SITE.unique()
 
     #Looping on models and sites for fitting and evaluating the scores
-    for site in site_list:
-        #split CTR dataset into train and test: one site will be used as test, the
-        #rest as training
-        for name_model, regressor in models.items():
+    for name_model, regressor in models.items():
+        MAE = []
+        for site in site_list:
+            #split CTR dataset into train and test: one site will be used as test, the
+            #rest as training
             print(f"\nUsing {site} as test set.")
             CTR_test = CTR.loc[CTR['SITE'] == f'{site}']
             CTR_train = CTR.drop(CTR[CTR.SITE == f'{site}'].index, axis=0)
@@ -322,36 +251,39 @@ if __name__ == '__main__':
             #==================================
             # STEP 4: Predict on site test set.
             #==================================
-            age_predicted_train, score_metrics_train = predict_on_site(x,
-                                                                       y,
-                                                                       model_fit,
-                                                                       site,
-                                                                       name_model,
-                                                                       nh_flag
-                                                                       )
-            #plot results
-            plot_scores_on_site(y,
-                        age_predicted_train,
-                        score_metrics_train,
-                        name_model,
-                        site,
-                        CTR_train.attrs['name'],
-                        )
 
-            age_predicted_test, score_metrics_test = predict_on_site(x_test,
-                                                                     y_test,
-                                                                     model_fit,
-                                                                     site,
-                                                                     name_model,
-                                                                     nh_flag
-                                                                     )
-            plot_scores_on_site(y_test,
-                        age_predicted_test,
-                        score_metrics_test,
-                        name_model,
-                        site,
-                        CTR_test.attrs['name'],
-                        )
+            age_predicted_test, site_MAE = predict_on_site(x_test,
+                                                             y_test,
+                                                             model_fit,
+                                                             site,
+                                                             name_model,
+                                                             nh_flag
+                                                             )
+
+            MAE.append(site_MAE)
+
+        #plot results in a summarizing barplot
+        fig, ax = plt.subplots(figsize=(22, 16))
+        bars = plt.bar(site_list, MAE)
+        ax.bar_label(bars, fontsize=16)
+        plt.xlabel("Sites", fontsize=20)
+        plt.ylabel("Mean Absolute Error", fontsize=20)
+        plt.title(f"MAE using {name_model} of {HARM_STATUS} sites' data ", fontsize = 20)
+        plt.yticks(fontsize=18)
+        plt.xticks(fontsize=18, rotation=50)
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE):.3f} [years]",
+                                     loc=1,
+                                     prop=dict(fontweight="bold", size=20),
+                                     borderpad=0.,
+                                     frameon=True,
+                                    )
+        ax.add_artist(anchored_text)
+        plt.savefig(f"images_SITE/Sites {HARM_STATUS} with {name_model}.png",
+            dpi=300,
+            format="png",
+            bbox_inches="tight"
+            )
+        plt.show()
 
     end_time = perf_counter()
     print(f"Elapsed time for prediction: {end_time-start_time}")

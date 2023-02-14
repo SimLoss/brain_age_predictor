@@ -171,9 +171,6 @@ if __name__ == '__main__':
             for thread in threads:
                 thr.join()
 
-            mean_s = np.mean(MAE)
-            std_s = np.std(MAE)
-
             #if verbose, plots the fit on each dataframe
             if args.verbose:
                 plot_scores(true_age, age_predicted,
@@ -181,6 +178,8 @@ if __name__ == '__main__':
                             dataframe.attrs['name']
                             )
 
+        mean_s = np.mean(MAE)
+        std_s = np.std(MAE)
         #printing a summarizing table with metrics per site
         print(f"Metrics for each site with {HARM_STATUS} dataset using {model_name} :")
         table = PrettyTable(["Metrics"]+[x for x in site_list])
@@ -203,7 +202,8 @@ if __name__ == '__main__':
         print(table)
         #making a comparative bar plot of MAE for site
         fig, ax = plt.subplots(figsize=(22, 16))
-        plt.bar(site_list, MAE)
+        bars = plt.bar(site_list, MAE)
+        ax.bar_label(bars, fontsize=16)
         plt.xlabel("Sites", fontsize=20)
         plt.ylabel("Mean Absolute Error", fontsize=20)
         plt.title(f"MAE using {model_name} of {HARM_STATUS} sites' data ", fontsize = 20)
