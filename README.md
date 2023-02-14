@@ -54,8 +54,8 @@ while also age distribution across sites change quite drastically as shown in th
 Since subjects with age> 40 years are poorly represented, they have been cutted out during pre-processing.
 ## Site harmonization
 
-On top of these differencies, another import confounding factor is related to the effect of the different acquisition sites on the features. To mitigate this effect, the state-of-art harmonization tool [neuroHarmonize](https://github.com/rpomponio/neuroHarmonize) implemented by [Pomponio et al.](https://www.sciencedirect.com/science/article/pii/S1053811919310419?via%3Dihub) has been used.
-<img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="500"/>
+On top of these differencies, another important confounding factor is related to the effect of the different acquisition sites on the features. To mitigate this effect, the state-of-art harmonization tool [neuroHarmonize](https://github.com/rpomponio/neuroHarmonize) implemented by [Pomponio et al.](https://www.sciencedirect.com/science/article/pii/S1053811919310419?via%3Dihub) has been used.
+<img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="700"/>
 <img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="500"/>
 
 neuroHarmonize corrects differences introducted by multi-site image acquisition preserving specified covariates. So, harmonization can be safely performed without affecting age-related biological variability of the dataset.
@@ -94,7 +94,8 @@ sphinx
 statsmodels
 tensorflow
 
-##Usage
+## Usage
+
 - **1**) Download the repository from github
 ```git clone https://github.com/Pastiera/brain_age_predictor```
 - **2**) Change directory: ```cd path/to/brain_age_predictor/brain_age_predictor```
@@ -116,10 +117,12 @@ optional arguments:
   -neuroharm, --harmonize
                         Use NeuroHarmonize to harmonize data by provenance site.
 
+```
+```
 Pre-trained model in /best_estimator can be run for reproducibility and newly trained model will be saved in the same folder. If no fitted models is already present in this folder, one shall firstly run ```brain_age_pred.py``` to use ```variability.py```.
 Results' plots are collected in 'images' or 'images_site' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics' folders.
 
-##References
+## References
 [1] Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.
 [2] Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.
 [3] Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018). 
