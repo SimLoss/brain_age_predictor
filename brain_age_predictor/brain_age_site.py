@@ -43,6 +43,7 @@ from preprocess import (read_df,
                         drop_covars,
                         test_scaler,
                         train_scaler)
+from predict_helper import bar_plot
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
@@ -54,11 +55,11 @@ scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
 
 #MODELS
 models = {
-    "DDNregressor": AgeRegressor(verbose=False),
+    #"DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
+    #"Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
+    #"KNeighborsRegressor": KNeighborsRegressor(),
+    #"SVR": SVR(),
     }
 
 def predict_on_site(x_pred,
@@ -66,7 +67,7 @@ def predict_on_site(x_pred,
                     model,
                     site_name,
                     model_name,
-                    harm_flag):
+                    harm_opt):
     """
     Plots the results of the predictions vs ground truth with related metrics
     scores.
@@ -86,8 +87,8 @@ def predict_on_site(x_pred,
     model_name : string
                 Model's name.
 
-    harm_flag : boolean.
-                Flag indicating if the dataframe has been previously harmonized.
+    harm_opt : string.
+                String indicating if the dataframe has been previously harmonized.
     Returns
     -------
     age_predicted :  array-like
@@ -111,25 +112,16 @@ def predict_on_site(x_pred,
                                 3)
                     }
     MAE = score_metrics['MAE']
-    if harm_flag is True:
-        table = PrettyTable(["Metrics"]+[site_name])
-        table.add_row(["MAE"]+[score_metrics['MAE']])
-        table.add_row(["MSE"] + [score_metrics['MSE']])
-        table.add_row(["PR"] + [score_metrics['PR']])
-        data_table = table.get_string()
 
-        with open( f"metrics/site/{site_name}_{model_name}_Harmonized.txt",
-                   'w') as file:
-            file.write(data_table)
-    else:
-        table = PrettyTable(["Metrics"]+[site_name])
-        table.add_row(["MAE"]+[score_metrics['MAE']])
-        table.add_row(["MSE"] + [score_metrics['MSE']])
-        table.add_row(["PR"] + [score_metrics['PR']])
-        data_table = table.get_string()
-        with open( f"metrics/site/{site_name}_{model_name}_Unharmonized.txt",
-                   'w') as file:
-            file.write(data_table)
+    table = PrettyTable(["Metrics"]+[site_name])
+    table.add_row(["MAE"]+[score_metrics['MAE']])
+    table.add_row(["MSE"] + [score_metrics['MSE']])
+    table.add_row(["PR"] + [score_metrics['PR']])
+    data_table = table.get_string()
+
+    with open( f"metrics/site/{site_name}_{model_name}_{harm_opt}.txt",
+               'w') as file:
+        file.write(data_table)
 
     return age_predicted, MAE
 
@@ -257,33 +249,13 @@ if __name__ == '__main__':
                                                              model_fit,
                                                              site,
                                                              name_model,
-                                                             nh_flag
+                                                             HARM_STATUS
                                                              )
 
             MAE.append(site_MAE)
 
         #plot results in a summarizing barplot
-        fig, ax = plt.subplots(figsize=(22, 16))
-        bars = plt.bar(site_list, MAE)
-        ax.bar_label(bars, fontsize=16)
-        plt.xlabel("Sites", fontsize=20)
-        plt.ylabel("Mean Absolute Error", fontsize=20)
-        plt.title(f"MAE using {name_model} of {HARM_STATUS} sites' data ", fontsize = 20)
-        plt.yticks(fontsize=18)
-        plt.xticks(fontsize=18, rotation=50)
-        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE):.3f} [years]",
-                                     loc=1,
-                                     prop=dict(fontweight="bold", size=20),
-                                     borderpad=0.,
-                                     frameon=True,
-                                    )
-        ax.add_artist(anchored_text)
-        plt.savefig(f"images_SITE/Sites {HARM_STATUS} with {name_model}.png",
-            dpi=300,
-            format="png",
-            bbox_inches="tight"
-            )
-        plt.show()
-
+        bar_plot(site_list, MAE, name_model, HARM_STATUS)
+        
     end_time = perf_counter()
     print(f"Elapsed time for prediction: {end_time-start_time}")

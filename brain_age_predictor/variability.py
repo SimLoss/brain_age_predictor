@@ -25,7 +25,7 @@ from preprocess import (read_df,
                         df_split,
                         train_scaler)
 from brain_age_pred import make_predict
-from predict_helper import plot_scores
+from predict_helper import plot_scores, bar_plot
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
@@ -123,10 +123,13 @@ if __name__ == '__main__':
 
     if args.losocv:
         DIR_FLAG = False
+
     if args.gridcv:
         DIR_FLAG = True
+
     if not (args.losocv or args.gridcv):
         parser.error('Required one of the following arguments: -grid or -loso')
+
     #initializing and filling a dictionary that will contain
     #each different dataframe based on site.
     df_dict = {}
@@ -200,25 +203,6 @@ if __name__ == '__main__':
                 file.write(data_table)
 
         print(table)
+
         #making a comparative bar plot of MAE for site
-        fig, ax = plt.subplots(figsize=(22, 16))
-        bars = plt.bar(site_list, MAE)
-        ax.bar_label(bars, fontsize=16)
-        plt.xlabel("Sites", fontsize=20)
-        plt.ylabel("Mean Absolute Error", fontsize=20)
-        plt.title(f"MAE using {model_name} of {HARM_STATUS} sites' data ", fontsize = 20)
-        plt.yticks(fontsize=18)
-        plt.xticks(fontsize=18, rotation=50)
-        anchored_text = AnchoredText(f"MAE:{mean_s:.3f} \u00B1 {std_s:.3f} [years]",
-                                     loc=1,
-                                     prop=dict(fontweight="bold", size=20),
-                                     borderpad=0.,
-                                     frameon=True,
-                                    )
-        ax.add_artist(anchored_text)
-        plt.savefig(f"images/Sites {HARM_STATUS} with {model_name}.png",
-            dpi=300,
-            format="png",
-            bbox_inches="tight"
-            )
-        plt.show()
+        bar_plot(site_list, MAE, model_name, HARM_STATUS)
