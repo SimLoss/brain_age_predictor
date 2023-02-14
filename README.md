@@ -76,7 +76,8 @@ Both scikitlearn's models and a custom neural network have been used.
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
 
 
-<img src="brain_age_predictor/images/Sites NeuroHarmonized with Random_Forest_Regressor.png" width="500"/><img src="brain_age_predictor/images/df_CTR_test_Harmonized_Random_Forest_Regressor.png" width="500"/>
+<img src="brain_age_predictor/images/losoCV/Sites NeuroHarmonized with Random_Forest_Regressor.png" width="700"/> 
+<img src="brain_age_predictor/images/losoCV/df_CTR_test_Harmonized_Random_Forest_Regressor.png" width="700"/>
 
 
 ## Requirements
@@ -123,6 +124,6 @@ Pre-trained model in /best_estimator can be run for reproducibility and newly tr
 Results' plots are collected in 'images' or 'images_site' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics' folders.
 
 ## References
-[1] Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.
-[2] Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.
-[3] Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018). 
+-[1] Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.
+-[2] Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.
+-[3] Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018). 
