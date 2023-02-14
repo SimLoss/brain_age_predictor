@@ -48,8 +48,6 @@ from DDNregressor import AgeRegressor
 #setting seed for reproducibility
 SEED = 42
 np.random.seed(SEED)
-#shutting down annoying warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 #SCORINGS
 scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]

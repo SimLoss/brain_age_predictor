@@ -1,5 +1,5 @@
 # pylint: disable= import-error, line-too-long, invalid-name, redefined-outer-name
-# pylint: disable= unbalanced-tuple-unpacking, dangerous-default-value
+# pylint: disable= unbalanced-tuple-unpacking, dangerous-default-value   <--- neuroHarmonize
 
 """ This module provides some function to read, explore and preprocess an input
     dataframe cointaining a set of features. Specifically, it allows to:
@@ -20,7 +20,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from scipy.stats import sem
 from neuroHarmonize import harmonizationLearn
 
 
@@ -79,14 +78,11 @@ def data_info(dataframe):
     print(f"Number of Controls:"
           f" {len(dataframe[dataframe.DX_GROUP==-1].index)}")
     print(f"Mean age in ASD set:"
-         f"{dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.mean()}"
-         f" \u00B1 {sem(dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values)}")
+         f"{round(dataframe[dataframe.DX_GROUP == -1]['AGE_AT_SCAN'].values.mean(),2)}")
     print(f"Mean age in CTR set: "
-         f"{dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.mean()}"
-         f" \u00B1 {sem(dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values)}")
+         f"{round(dataframe[dataframe.DX_GROUP == 1]['AGE_AT_SCAN'].values.mean(), 2)}")
     print(f"Total mean age:"
-         f"{dataframe['AGE_AT_SCAN'].values.mean()}"
-         f" \u00B1 {sem(dataframe['AGE_AT_SCAN'].values)}")
+         f"{round(dataframe['AGE_AT_SCAN'].values.mean(), 2)}")
     print("\n\nShowing the first and last 10 rows of the dataframe.. ")
     print(dataframe.head(10))
     print(dataframe.tail(10))

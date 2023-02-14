@@ -11,7 +11,7 @@ on test set.
 Workflow:
     1. Read the ABIDE dataframe and make some preprocessing.
     2. Split dataframe into cases and controls, the latter (CTR) in
-        train and test set. Scale the datasets.
+    train and test set. Scale the datasets.
     3. Cross validation on training set.
        Best models setting will be saved in "best estimator" folder.
     4. Best models are used to predict age on CTR train and test set and, finally,
@@ -53,10 +53,7 @@ from DDNregressor import AgeRegressor
 #setting SEED for reproducibility
 SEED = 42
 np.random.seed(SEED)
-#shutting down annoying warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-#clear tensorflow session at each run
-tensorflow.keras.backend.clear_session()
+
 #MODELS
 models = {
     "DDNregressor": AgeRegressor(verbose=False),

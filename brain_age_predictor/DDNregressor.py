@@ -6,7 +6,6 @@ Module for Deep Dense Network implementation.
 
 import os
 
-import absl.logging
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -21,8 +20,8 @@ np.random.seed(SEED)
 tf.keras.utils.set_random_seed(SEED)
 #clearing previous keras sessions
 tf.keras.backend.clear_session()
-absl.logging.set_verbosity(absl.logging.ERROR)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#setting tensorflow verbosity
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 ##############################
 class AgeRegressor(BaseEstimator):
@@ -55,7 +54,7 @@ class AgeRegressor(BaseEstimator):
     --------
     _________________________________________________________________
      Layer (type)                Output Shape              Param #
-    =================================================================
+
      input_1 (InputLayer)        [(None, 420)]             0
 
      dense (Dense)               (None, 128)               53888
@@ -72,7 +71,7 @@ class AgeRegressor(BaseEstimator):
 
      dense_5 (Dense)             (None, 1)                 17
 
-    =================================================================
+
     Total params: 68,929
     Trainable params: 68,929
     Non-trainable params: 0
