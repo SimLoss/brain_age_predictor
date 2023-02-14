@@ -31,8 +31,8 @@ brain_age_predictor/
 │   ├── __init__.py
 │   ├── variability.py
 │   ├── DDNregressor.py
-│   ├── predict_helper.py
-│   └── wavelethelper.py
+│   └── predict_helper.py
+│   
 ├── README.md
 ├── requirements.txt
 └── tests
