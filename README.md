@@ -39,40 +39,44 @@ brain_age_predictor/
     └── test.py
     └── __init__.py
 ```
-
-##Data
+## Data
 
 Datas from ABIDE (Autism Brain Imaging Data Exchange) are contained in .csv files inside brain_age_predictor/dataset folder and are handled with Pandas. This dataset contains 419 brain morphological features (volumes, thickness, area, etc.) of different brain segmented area (via Freesurfer sofware) belonging to 915 male subjects (451 cases, 464 controls) pespectively with with total mean age of 
 17.47 ± 0.36 and 17.38 ± 0.40. 
 The age distribution of subjects, although heterogeneous between CTR and ASD groups, presents quite a skewed profile:
-<img src="brain_age_predictor/images/AGE_AT_SCAN_histogram.png" width="400"/>
+
+<img src="brain_age_predictor/images/AGE_AT_SCAN_histogram.png" width="700"/>
+
 while also age distribution across sites change quite drastically as shown in the following boxplot:
-<img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="400"/>
+
+<img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="700"/>
 
 Since subjects with age> 40 years are poorly represented, they have been cutted out during pre-processing.
 ## Site harmonization
 
 On top of these differencies, another import confounding factor is related to the effect of the different acquisition sites on the features. To mitigate this effect, the state-of-art harmonization tool [neuroHarmonize](https://github.com/rpomponio/neuroHarmonize) implemented by [Pomponio et al.](https://www.sciencedirect.com/science/article/pii/S1053811919310419?via%3Dihub) has been used.
-<img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="400"/>
-<img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="400"/>
+<img src="brain_age_predictor/images/Unharmonized ABIDE dataframe_box plot.png" width="500"/>
+<img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="500"/>
 
 neuroHarmonize corrects differences introducted by multi-site image acquisition preserving specified covariates. So, harmonization can be safely performed without affecting age-related biological variability of the dataset.
 This is particulary important as different sites have different age distribution.
 The analysis has been conducted using 'unharmonized' and 'harmonized' datas.
 
-##Analysis
+## Analysis
 
 #Method
 The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[1], models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences by residual plots are shown in the results avalaible in /images folder.
 
 #Pipelines
-Different models have been evaluated on age prediction performances by means of typical regression metrics (MAE, MSE). Specifically, both scikitlearn and a custom neural network have been evaluated.
 Two different pipelines has been followed based on Leave-One-Site-Out approach:
-1. Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV( [1][2]
+1. Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[2][3]
 2. Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
-
+Both scikitlearn's models and a custom neural network have been used.
 ##Results
+Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
 
+
+<img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="500"/><img src="brain_age_predictor/images/Harmonized ABIDE_box plot.png" width="500"/>
 
 
 ## Requirements
@@ -116,4 +120,6 @@ Pre-trained model in /best_estimator can be run for reproducibility and newly tr
 Results' plots are collected in 'images' or 'images_site' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics' folders.
 
 ##References
-
+[1] Courchesne E, Campbell K, Solso S. Brain growth across the life span in autism: age-specific changes in anatomical pathology. Brain Res. 2011 Mar 22;1380:138-45. doi: 10.1016/j.brainres.2010.09.101. Epub 2010 Oct 1. PMID: 20920490; PMCID: PMC4500507.
+[2] Okamoto N and Akama H (2021), Extended Invariant Information Clustering Is Effective for Leave-One-Site-Out Cross-Validation in Resting State Functional Connectivity Modeling. Front.Neuroinform. 15:709179.
+[3] Bhaumik, R., Pradhan, A., Das, S. et al. Predicting Autism Spectrum Disorder Using Domain-Adaptive Cross-Site Evaluation. Neuroinform 16, 197–205 (2018). 

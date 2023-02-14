@@ -352,8 +352,8 @@ def neuroharmonize(dataframe, covariate= ["SITE","AGE_AT_SCAN"]):
                 that identifies sites.
 
     covariate : list, default=['AGE_AT_SCAN']
-                List of strings that contains covariates to control for
-                during harmonization.
+                List of strings of the covariates to be preserved during
+                harmonization.
                 All covariates must be encoded numerically (no categorical
                 variables) and list must contain a single column "SITE" with
                 site labels.
