@@ -5,7 +5,7 @@
 
 This repository contains a project for Computing Methods for Experimental Physics and Data Analysis course.
 
-The aim is to design and implement a regression model to predict the age of the healthy subjects from brain data features extracted from T1-weighted MRI images. Datas are taken from to the well known [ABIDE] (http://fcon_1000.projects.nitrc.org/indi/abide/abide_I.html) dataset, in which are present subjects affected by Autism Spectre Disorder (ASD) and healthy control subjects (CTR).
+The aim is to design and implement a regression model to predict the age of the healthy subjects from brain data features extracted from T1-weighted MRI images. Datas are taken from to the well known [ABIDE](http://fcon_1000.projects.nitrc.org/indi/abide/abide_I.html) dataset, in which are present subjects affected by Autism Spectre Disorder (ASD) and healthy control subjects (CTR).
 
 The algorithm allows to:
 - visualize and explore ABIDE datas;
@@ -65,12 +65,12 @@ The analysis has been conducted using 'unharmonized' and 'harmonized' datas.
 # Analysis
 
 ## Method
-The entire analysis has been conducted with the following rationale: due to the fact that autistic subjects shows different morphological development during the whole lifespan[(1)](https://pubmed.ncbi.nlm.nih.gov/20920490/), models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences through residual plots are shown in the results avalaible in /images folder.
-Being very poorly represented (<4%), subjects with age >40 years have been discarded from the present study, similarly to other studies in the field.[(2)](https://www.sciencedirect.com/science/article/pii/S2213158222001474)
+Models have been trained using only control cases (CTR) and then evaluated separately on CTR set and cases set (ASD). Differences through residual plots are shown in the results avalaible in /images folder.
+Being very poorly represented (<4%), subjects with age >40 years have been discarded from the present study, similarly to other studies in the field.[(1)](https://www.sciencedirect.com/science/article/pii/S2213158222001474)
 
 ## Pipelines
 Two different pipelines have been followed based on Leave-One-Site-Out approach:
-- **1**)  Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[(3)](https://pubmed.ncbi.nlm.nih.gov/34924987/)[(4)](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
+- **1**)  Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[(2)](https://pubmed.ncbi.nlm.nih.gov/34924987/)[(3)](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
 - **2**)  Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
 # Results
