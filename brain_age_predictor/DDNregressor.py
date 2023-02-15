@@ -144,10 +144,10 @@ class AgeRegressor(BaseEstimator):
         if self.verbose:
             plt.plot(history.history["loss"])
             plt.plot(history.history["val_loss"])
-            plt.title('Model loss')
-            plt.ylabel('Loss')
+            plt.title('DDN Regressor loss')
+            plt.ylabel('MAE [years]')
             plt.xlabel('Epochs')
-            plt.legend(['train', 'validation'], loc='upper right')
+            plt.legend(['Train', 'Validation'], loc='upper right')
             plt.show()
 
         return self.model
