@@ -51,7 +51,6 @@ Also age distribution across sites change quite drastically as shown in the foll
 
 <img src="brain_age_predictor/images/AGE_distribution_box plot.png" width="700"/>
 
-Since subjects with age> 40 years are poorly represented, they have been cutted out during pre-processing.
 # Site harmonization
 
 On top of these differencies, another important confounding factor is related to the effect of the different acquisition sites on the features. To mitigate this effect, the state-of-art harmonization tool [neuroHarmonize](https://github.com/rpomponio/neuroHarmonize) implemented by [Pomponio et al.](https://www.sciencedirect.com/science/article/pii/S1053811919310419?via%3Dihub) has been used.
