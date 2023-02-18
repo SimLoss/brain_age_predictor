@@ -72,7 +72,7 @@ Two different pipelines have been followed based on Leave-One-Site-Out approach:
 - **2**)  Datas have been processed without discrimination based on site and validated through a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
 # Results
-Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
+Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid' folders. Variability plots are stored in 'images_SITE/grid' folder. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE/site' folder.
 
 
 <img src="brain_age_predictor/images_SITE/grid/Sites NeuroHarmonized with Random_Forest_Regressor.png" width="700"/> 
