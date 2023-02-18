@@ -10,7 +10,6 @@ from matplotlib.offsetbox import AnchoredText
 def plot_scores(y_test,
                 age_predicted,
                 metrics,
-                directory_flag,
                 model_name="Regressor model",
                 dataframe_name="Dataframe",
                 ):
@@ -69,19 +68,12 @@ def plot_scores(y_test,
                                 )
     ax.add_artist(anchored_text)
 
-    if directory_flag is True:
-        plt.savefig(
-                    f"images/gridCV/{dataframe_name}_{model_name}.png",
-                    dpi=200,
-                    format="png",
-                    bbox_inches="tight",
-                    )
-    else:
-        plt.savefig(f"images/losoCV/{dataframe_name}_{model_name}.png",
-                    dpi=200,
-                    format="png",
-                    bbox_inches="tight",
-                    )
+
+    plt.savefig(f"images/{dataframe_name}_{model_name}.png",
+                dpi=200,
+                format="png",
+                bbox_inches="tight",
+                )
 
     plt.show()
 
@@ -89,8 +81,7 @@ def residual_plot(true_age1,
                   pred_age1,
                   true_age2,
                   pred_age2,
-                  model_name,
-                  directory_flag):
+                  model_name):
     """
     Computes the difference(delta) between predicted age find with a
     specific model and true age on control test and ASD dataframes.
@@ -140,16 +131,10 @@ def residual_plot(true_age1,
     plt.tick_params(axis="y", labelsize=18)
     plt.legend(loc="upper right", fontsize=14)
 
-    if directory_flag is True:
-        plt.savefig(
-            f"images/gridCV/delta_pred_{model_name}.png",
-            dpi=200,
-            format="png")
-    else:
-        plt.savefig(
-            f"images/losoCV/delta_pred_{model_name}.png",
-            dpi=200,
-            format="png")
+    plt.savefig(
+        f"images/delta_pred_{model_name}.png",
+        dpi=200,
+        format="png")
 
     plt.show()
 
@@ -180,12 +165,10 @@ def bar_plot(list_of_sites, metric, regressor_name, harm_stat):
     ax.bar_label(bars, fontsize=16)
     plt.xlabel("Sites", fontsize=20)
     plt.ylabel("Mean Absolute Error", fontsize=20)
-    plt.title(f"MAE using {regressor_name} of {harm_stat} sites' data ", fontsize = 20)
+    plt.title(f"MAE using {regressor_name} of {harm_stat} sites' data ",
+              fontsize = 20)
     plt.yticks(fontsize=18)
-    plt.xticks(ticks=np.arange(len(list_of_sites)),
-               label=list_of_sites,
-               fontsize=18,
-               rotation=50)
+    plt.xticks(fontsize=18, rotation=50)
     anchored_text = AnchoredText(f"MAE:{np.mean(metric):.3f} \u00B1 {np.std(metric):.3f} [years]",
                                  loc=1,
                                  prop=dict(fontweight="bold", size=20),
@@ -193,7 +176,7 @@ def bar_plot(list_of_sites, metric, regressor_name, harm_stat):
                                  frameon=True,
                                 )
     ax.add_artist(anchored_text)
-    plt.savefig(f"images_SITE/Sites {harm_stat} with {regressor_name}.png",
+    plt.savefig(f"images_SITE/grid/Sites {harm_stat} with {regressor_name}.png",
         dpi=300,
         format="png",
         bbox_inches="tight"

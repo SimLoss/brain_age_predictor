@@ -3,6 +3,8 @@
 
 """
 Module testing the reproducibility of the results on each site's dataframe.
+If no argument is stated from command line, the program will be executed without
+data harmonization.
 The analysis will be performed on control subjects.
 """
 import sys
@@ -56,6 +58,12 @@ if __name__ == '__main__':
         default= 'dataset/FS_features_ABIDE_males.csv'
         )
 
+    parser.add_argument('-s',
+                        '--start',
+                        help='Start script without harmonization.',
+                        action="store_const",
+                        const=True)
+
     parser.add_argument(
         "-verb",
         "--verbose",
@@ -68,20 +76,6 @@ if __name__ == '__main__':
         "--harmonize",
         action = 'store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
-        )
-
-    parser.add_argument(
-        "-loso",
-        "--losocv",
-        action = 'store_true',
-        help="Use models trained with Leave-One-Site-Out CV."
-        )
-
-    parser.add_argument(
-        "-grid",
-        "--gridcv",
-        action = 'store_true',
-        help="Use models trained with GridSearchCV."
         )
 
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
@@ -121,15 +115,6 @@ if __name__ == '__main__':
     #creating a list of datas' provenance site.
     site_list = df_CTR.SITE.unique()
 
-    if args.losocv:
-        DIR_FLAG = False
-
-    if args.gridcv:
-        DIR_FLAG = True
-
-    if not (args.losocv or args.gridcv):
-        parser.error('Required one of the following arguments: -grid or -loso')
-
     #initializing and filling a dictionary that will contain
     #each different dataframe based on site.
     df_dict = {}
@@ -145,8 +130,7 @@ if __name__ == '__main__':
         for dataframe in df_dict.values():
             age_predicted, true_age, metrics= make_predict(dataframe,
                                                            model_name,
-                                                           nh_flag,
-                                                           DIR_FLAG
+                                                           nh_flag
                                                            )
 
             appender = lambda metric, key: metric.append(metrics[key])
@@ -190,17 +174,10 @@ if __name__ == '__main__':
         table.add_row(["MSE"] + [x for x in MSE])
         table.add_row(["PR"] + [x for x in PR])
 
-        if DIR_FLAG is True:
-            data_table = table.get_string()
-            with open( f'metrics/grid/metrics_{model_name}_{HARM_STATUS}.txt',
-                       'w', encoding="utf-8") as file:
-                file.write(data_table)
-
-        else:
-            data_table = table.get_string()
-            with open( f'metrics/loso/metrics_{model_name}_{HARM_STATUS}.txt',
-                       'w', encoding="utf-8") as file:
-                file.write(data_table)
+        data_table = table.get_string()
+        with open( f'metrics/grid/metrics_{model_name}_{HARM_STATUS}.txt',
+                   'w', encoding="utf-8") as file:
+            file.write(data_table)
 
         print(table)
 

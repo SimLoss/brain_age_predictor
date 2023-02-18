@@ -16,7 +16,9 @@ Workflow:
 3. Cross validation on training set.
 4. Predict on site test set.
 
-For each splitting, all plots will be saved in "images_SITE" folder.
+For each splitting, all plots will be saved in "images_SITE" folder. Metrics
+obtained from each cross validation are stored in "/metrics/site" folder.
+
 """
 import os
 import sys
@@ -57,9 +59,11 @@ scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
 models = {
     "DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
+    "Random_Forest_Regressor": RandomForestRegressor(n_estimators=100,
+                                                    max_features='log2',
+                                                    random_state=SEED),
     "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
+     "SVR": SVR(),
     }
 
 def predict_on_site(x_pred,
@@ -214,15 +218,15 @@ if __name__ == '__main__':
                 y_test = y_test.to_numpy()
             except AttributeError:
                 pass
+
+            #================================
+            # STEP 3: KFold cross validation.
+            #================================
             #initializing metrics arrays for validation scores
             mse_val = np.array([])
             mae_val = np.array([])
             pr_val = np.array([])
-            #================================
-            # STEP 3: KFold cross validation.
-            #================================
             cv = KFold(n_splits=5, shuffle=True, random_state=SEED)
-
             for train_index, val_index in cv.split(x, y):
                 model_fit = regressor.fit(x[train_index], y[train_index])
                 predict_y_train = model_fit.predict(x[train_index])
@@ -240,6 +244,7 @@ if __name__ == '__main__':
             print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
             print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
             print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
+
             #==================================
             # STEP 4: Predict on site test set.
             #==================================
@@ -255,7 +260,28 @@ if __name__ == '__main__':
             MAE.append(site_MAE)
 
         #plot results in a summarizing barplot
-        bar_plot(site_list, MAE, name_model, HARM_STATUS)
+        fig, ax = plt.subplots(figsize=(22, 16))
+        bars = plt.bar(list_of_sites, metric)
+        ax.bar_label(bars, fontsize=16)
+        plt.xlabel("Sites", fontsize=20)
+        plt.ylabel("Mean Absolute Error", fontsize=20)
+        plt.title(f"MAE using {regressor_name} of {harm_stat} sites' data ",
+                  fontsize = 20)
+        plt.yticks(fontsize=18)
+        plt.xticks(fontsize=18, rotation=50)
+        anchored_text = AnchoredText(f"MAE:{np.mean(metric):.3f} \u00B1 {np.std(metric):.3f} [years]",
+                                     loc=1,
+                                     prop=dict(fontweight="bold", size=20),
+                                     borderpad=0.,
+                                     frameon=True,
+                                    )
+        ax.add_artist(anchored_text)
+        plt.savefig(f"images_SITE/site/Sites {harm_stat} with {regressor_name}.png",
+            dpi=300,
+            format="png",
+            bbox_inches="tight"
+            )
+        plt.show()
 
     end_time = perf_counter()
     print(f"Elapsed time for prediction: {end_time-start_time}")

@@ -10,7 +10,7 @@ The aim is to design and implement a regression model to predict the age of the 
 The algorithm allows to:
 - visualize and explore ABIDE datas;
 - make data harmonization by site;
-- train different regression models using different cross validation;
+- train different regression models;
 - confront two alternative approaches to the problem.
 
 The repository is structured as follows:
@@ -27,7 +27,6 @@ brain_age_predictor/
 │   ├── brain_age_pred.py
 │   ├── brain_age_site.py
 │   ├── grid_CV.py
-│   ├── loso_CV.py
 │   ├── __init__.py
 │   ├── variability.py
 │   ├── DDNregressor.py
@@ -70,7 +69,7 @@ Being very poorly represented (<4%), subjects with age >40 years have been disca
 ## Pipelines
 Two different pipelines have been followed based on Leave-One-Site-Out approach:
 - **1**)  Datas have been previously separeted in train/test sets using one provenance site as test and the others as train and consequently cross-validated with KFold CV.[(2)](https://pubmed.ncbi.nlm.nih.gov/34924987/)[(3)](https://link.springer.com/content/pdf/10.1007/s12021-018-9366-0.pdf)
-- **2**)  Datas have been processed without discrimination based on site, but using different cross validation approaches: one using a custom Leave-One-Site-Out(LOSO) cross validation, the other a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
+- **2**)  Datas have been processed without discrimination based on site and validated through a regular [GridSearch CV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html).
 Both scikitlearn's models and a custom neural network have been used.
 # Results
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.

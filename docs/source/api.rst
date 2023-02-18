@@ -15,9 +15,6 @@ Public interfaces
 .. automodule:: grid_CV
    :members:
 
-.. automodule:: loso_CV
-  :members:
-
 .. automodule:: DDNregressor
    :members:
 

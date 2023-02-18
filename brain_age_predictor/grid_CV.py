@@ -131,8 +131,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
         saved_name = model_name + '_Unharmonized'
     try:
         with open(
-            f'best_estimator/grid/{saved_name}.pkl', 'wb'
+            f'best_estimator/{saved_name}.pkl', 'wb'
         ) as file:
             pickle.dump(model_best, file)
     except Exception as exc:
-        raise IOError("Folder \'/best_estimator/grid\' not found.") from exc
+        raise IOError("Folder \'/best_estimator' not found.") from exc
