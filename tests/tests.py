@@ -78,18 +78,6 @@ class TestBrainAge(unittest.TestCase):
         self.assertTrue(all(scaled_df['TotalWhiteVol']<=1),
                             "Dataframe was not normalized")
 
-    def test_train_scaler(self):
-        """
-        Test for train_scaler function.
-        """
-        dataframe = read_df(self.data)
-        add_WhiteVol_feature(dataframe)
-        scaler = RobustScaler()
-        scaled_df = train_scaler(dataframe,
-                                scaler,
-                                harm_flag=True)
-        self.assertNotEqual(scaled_df['TotalWhiteVol'].to_numpy().all(),
-                            dataframe['TotalWhiteVol'].to_numpy().all())
 
     def test_neuroharmonize(self):
         """

@@ -42,9 +42,7 @@ from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        drop_covars,
-                        test_scaler,
-                        train_scaler)
+                        drop_covars)
 from grid_CV import model_tuner_cv
 from predict_helper import plot_scores, residual_plot
 from DDNregressor import AgeRegressor
@@ -144,8 +142,8 @@ if __name__ == '__main__':
         )
 
     parser.add_argument(
-        "-fitgrid",
-        "--fitgridcv",
+        "-pred",
+        "--predict",
         action='store_true',
         help="Make predictions with models pre-trained with GridSearchCV."
         )
@@ -177,7 +175,7 @@ if __name__ == '__main__':
 
     if args.harmonize:
         NH_FLAG = args.harmonize
-        df = neuroharmonize(df, seed=SEED)
+        df = neuroharmonize(df)
     else:
         NH_FLAG = args.harmonize
 
@@ -191,14 +189,14 @@ if __name__ == '__main__':
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
                                            random_state=SEED)
-    #scaling train set
-    rob_scaler = RobustScaler()
-    df_CTR_train = train_scaler(CTR_train, rob_scaler, NH_FLAG)
-
-    #using fitted scaler to transform test/ASD sets
-    df_CTR_test = test_scaler(CTR_test, rob_scaler, NH_FLAG, "df_CTR_test")
-    df_ASD = test_scaler(ASD, rob_scaler, NH_FLAG, "df_ASD")
-
+    if NH_FLAG is True:
+        CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
+        CTR_test.attrs['name'] = 'df_CTR_test_Harmonized'
+        ASD.attrs['name'] = 'df_ASD_Harmonized'
+    else:
+        CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+        CTR_test.attrs['name'] = 'df_CTR_test_Unharmonized'
+        ASD.attrs['name'] = 'df_ASD_Unharmonized'
     #===================================================================
     # STEP 3: Cross Validation on training set (only if gridcv is True).
     #===================================================================
@@ -207,10 +205,13 @@ if __name__ == '__main__':
 
         if args.gridcv:
             #Performing GridSearch Cross Validation
-            best_hyp_estimator = model_tuner_cv(df_CTR_train,
+            best_hyp_estimator = model_tuner_cv(CTR_train,
                                                 regressor,
                                                 name_regressor,
                                                 NH_FLAG)
+
+        if not (args.gridcv or args.predict):
+            parser.error('Required one of the following arguments: -grid, -pred')
 
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")
@@ -218,7 +219,7 @@ if __name__ == '__main__':
     #=======================================================
     # STEP 4: Prediction on test/ASD set and results' plots.
     #=======================================================
-    df_list = [df_CTR_train, df_CTR_test, df_ASD]
+    df_list = [CTR_train, CTR_test, ASD]
 
     #make prediction and plot scores
     pred = {}

@@ -24,8 +24,7 @@ from prettytable import PrettyTable
 from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
-                        df_split,
-                        train_scaler)
+                        df_split)
 from brain_age_pred import make_predict
 from predict_helper import plot_scores
 from DDNregressor import AgeRegressor
@@ -104,13 +103,7 @@ if __name__ == '__main__':
 
     #splitting data in ASD and CTR dataframe, taking only
     #the latter for further analysis.
-    ASD, CTR = df_split(df_ABIDE)
-    #initializing a scaler and scaling CTR set
-    rob_scaler = RobustScaler()
-    df_CTR = train_scaler(CTR,
-                          rob_scaler,
-                          nh_flag
-                          )
+    ASD, df_CTR = df_split(df_ABIDE)
 
     #creating a list of datas' provenance site.
     site_list = df_CTR.SITE.unique()
@@ -198,7 +191,7 @@ if __name__ == '__main__':
                                      frameon=True,
                                     )
         ax.add_artist(anchored_text)
-        plt.savefig(f"images_SITE/grid/Sites {HARM_STATUS} with {model_name}.png",
+        plt.savefig(f"images_SITE/grid/ Sites {HARM_STATUS} with {model_name}.png",
             dpi=300,
             format="png",
             bbox_inches="tight"

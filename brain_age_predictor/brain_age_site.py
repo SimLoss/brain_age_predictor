@@ -36,15 +36,16 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import RobustScaler
+from sklearn.feature_selection import SelectKBest
+from sklearn.pipeline import Pipeline
+
 from prettytable import PrettyTable
 
 from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        drop_covars,
-                        test_scaler,
-                        train_scaler)
+                        drop_covars)
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
@@ -201,13 +202,6 @@ if __name__ == '__main__':
             CTR_test = CTR.loc[CTR['SITE'] == f'{site}']
             CTR_train = CTR.drop(CTR[CTR.SITE == f'{site}'].index, axis=0)
 
-            #initializing a scaler and scaling train set
-            rob_scaler = RobustScaler()
-            CTR_train = train_scaler(CTR_train, rob_scaler, nh_flag)
-
-            #using fitted scaler to transform test/ASD sets
-            CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "CTR_test")
-
             x, y = drop_covars(CTR_train)[0], CTR_train['AGE_AT_SCAN']
             x_test, y_test = drop_covars(CTR_test)[0], CTR_test['AGE_AT_SCAN']
             try:
@@ -225,9 +219,18 @@ if __name__ == '__main__':
             mse_val = np.array([])
             mae_val = np.array([])
             pr_val = np.array([])
+
+            pipe = Pipeline(
+            steps=[
+                ("Feature", SelectKBest()),
+                ("Scaler", RobustScaler()),
+                ("Model", regressor)
+                ]
+            )
+
             cv = KFold(n_splits=5, shuffle=True, random_state=SEED)
             for train_index, val_index in cv.split(x, y):
-                model_fit = regressor.fit(x[train_index], y[train_index])
+                model_fit = pipe.fit(x[train_index], y[train_index])
                 predict_y_train = model_fit.predict(x[train_index])
                 y[val_index] = np.squeeze(y[val_index])
                 predict_y_val = model_fit.predict(x[val_index])
@@ -275,7 +278,7 @@ if __name__ == '__main__':
                                      frameon=True,
                                     )
         ax.add_artist(anchored_text)
-        plt.savefig(f"images_SITE/site/Sites {HARM_STATUS} with {name_model}.png",
+        plt.savefig(f"images_SITE/site/ Sites {HARM_STATUS} with {name_model}.png",
             dpi=300,
             format="png",
             bbox_inches="tight"

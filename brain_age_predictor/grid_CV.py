@@ -8,13 +8,12 @@ hyperparameters and parameters optimization.
 import pickle
 
 import numpy as np
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import RobustScaler
 from sklearn.pipeline import Pipeline
-from sklearn.feature_selection import f_regression
 
 from preprocess import drop_covars
-#setting random state for reproducibility
 
 def model_tuner_cv(dataframe, model, model_name, harm_flag):
     """
@@ -96,6 +95,7 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
     pipe = Pipeline(
     steps=[
         ("Feature", SelectKBest()),
+        ("Scaler", RobustScaler()),
         ("Model", model)
         ]
     )
