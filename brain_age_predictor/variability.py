@@ -27,7 +27,7 @@ from preprocess import (read_df,
                         df_split,
                         train_scaler)
 from brain_age_pred import make_predict
-from predict_helper import plot_scores, bar_plot
+from predict_helper import plot_scores
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
@@ -182,4 +182,25 @@ if __name__ == '__main__':
         print(table)
 
         #making a comparative bar plot of MAE for site
-        bar_plot(site_list, MAE, model_name, HARM_STATUS)
+        fig, ax = plt.subplots(figsize=(22, 16))
+        bars = plt.bar(site_list, MAE)
+        ax.bar_label(bars, fontsize=16)
+        plt.xlabel("Sites", fontsize=20)
+        plt.ylabel("Mean Absolute Error", fontsize=20)
+        plt.title(f"MAE using {model_name} of {HARM_STATUS} sites' data ",
+                  fontsize = 20)
+        plt.yticks(fontsize=18)
+        plt.xticks(fontsize=18, rotation=50)
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE):.3f} [years]",
+                                     loc=1,
+                                     prop=dict(fontweight="bold", size=20),
+                                     borderpad=0.,
+                                     frameon=True,
+                                    )
+        ax.add_artist(anchored_text)
+        plt.savefig(f"images_SITE/grid/Sites {HARM_STATUS} with {model_name}.png",
+            dpi=300,
+            format="png",
+            bbox_inches="tight"
+            )
+        plt.show()

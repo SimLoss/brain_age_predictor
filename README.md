@@ -75,8 +75,8 @@ Both scikitlearn's models and a custom neural network have been used.
 Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation coefficient (PR) has been also calculated too. For pipeline 1, results' plots are collected in 'images' folder, while fitted models and relative metrics' results are stored respectively in 'best_estimator' and 'metrics/grid(loso)' folders. For pipeline 2, results' metrics are also stored in 'metrics/site' and summarizing plots are stored in 'images_SITE' folder.
 
 
-<img src="brain_age_predictor/images/losoCV/Sites NeuroHarmonized with Random_Forest_Regressor.png" width="700"/> 
-<img src="brain_age_predictor/images/losoCV/df_CTR_test_Harmonized_Random_Forest_Regressor.png" width="700"/>
+<img src="brain_age_predictor/images/gridCV/Sites NeuroHarmonized with Random_Forest_Regressor.png" width="700"/> 
+<img src="brain_age_predictor/images/gridCV/df_CTR_test_Harmonized_Random_Forest_Regressor.png" width="700"/>
 
 
 # Requirements

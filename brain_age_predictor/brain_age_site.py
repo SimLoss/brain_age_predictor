@@ -45,7 +45,6 @@ from preprocess import (read_df,
                         drop_covars,
                         test_scaler,
                         train_scaler)
-from predict_helper import bar_plot
 from DDNregressor import AgeRegressor
 
 #setting seed for reproducibility
@@ -261,22 +260,22 @@ if __name__ == '__main__':
 
         #plot results in a summarizing barplot
         fig, ax = plt.subplots(figsize=(22, 16))
-        bars = plt.bar(list_of_sites, metric)
+        bars = plt.bar(site_list, MAE)
         ax.bar_label(bars, fontsize=16)
         plt.xlabel("Sites", fontsize=20)
         plt.ylabel("Mean Absolute Error", fontsize=20)
-        plt.title(f"MAE using {regressor_name} of {harm_stat} sites' data ",
+        plt.title(f"MAE using {name_model} of {HARM_STATUS} sites' data ",
                   fontsize = 20)
         plt.yticks(fontsize=18)
         plt.xticks(fontsize=18, rotation=50)
-        anchored_text = AnchoredText(f"MAE:{np.mean(metric):.3f} \u00B1 {np.std(metric):.3f} [years]",
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE):.3f} [years]",
                                      loc=1,
                                      prop=dict(fontweight="bold", size=20),
                                      borderpad=0.,
                                      frameon=True,
                                     )
         ax.add_artist(anchored_text)
-        plt.savefig(f"images_SITE/site/Sites {harm_stat} with {regressor_name}.png",
+        plt.savefig(f"images_SITE/site/Sites {HARM_STATUS} with {name_model}.png",
             dpi=300,
             format="png",
             bbox_inches="tight"
