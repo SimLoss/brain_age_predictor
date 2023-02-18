@@ -61,7 +61,6 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
                                             "Model__n_estimators": [10, 100, 300],
                                             "Model__max_features": ["sqrt", "log2"],
                                             "Model__max_depth": [3, 4, 5, 6],
-                                            "Model__random_state": [42],
                                            },
 
                "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
@@ -122,8 +121,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
     std_mse_val = np.std(model_cv.cv_results_["mean_test_neg_mean_squared_error"])
 
     print("\nCross-Validation: metrics scores (mean values) on validation set:")
-    print(f"MAE:{np.around(MAE_val,3)} \u00B1 {np.around(std_mae_val,3)} [years^2]")
-    print(f"MSE:{np.around(MSE_val,3)} \u00B1 {np.around(std_mse_val,3)} [years]")
+    print(f"MAE:{np.around(MAE_val,3)} \u00B1 {np.around(std_mae_val,3)} [years]")
+    print(f"MSE:{np.around(MSE_val,3)} \u00B1 {np.around(std_mse_val,3)} [years^2]")
 
     #saving results on disk folder "../best_estimator"
     if harm_flag is True:

@@ -58,9 +58,12 @@ np.random.seed(SEED)
 models = {
     "DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
+    "Random_Forest_Regressor": RandomForestRegressor(n_estimators=100,
+                                                     max_features="log2",
+                                                     random_state=SEED),
+    "KNeighborsRegressor": KNeighborsRegressor(n_neighbors=15,
+                                               weights='distance'),
+    "SVR": SVR(kernel='rbf'),
     }
 
 def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):

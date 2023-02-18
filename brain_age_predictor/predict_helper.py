@@ -182,7 +182,10 @@ def bar_plot(list_of_sites, metric, regressor_name, harm_stat):
     plt.ylabel("Mean Absolute Error", fontsize=20)
     plt.title(f"MAE using {regressor_name} of {harm_stat} sites' data ", fontsize = 20)
     plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18, rotation=50)
+    plt.xticks(ticks=np.arange(len(list_of_sites)),
+               label=list_of_sites,
+               fontsize=18,
+               rotation=50)
     anchored_text = AnchoredText(f"MAE:{np.mean(metric):.3f} \u00B1 {np.std(metric):.3f} [years]",
                                  loc=1,
                                  prop=dict(fontweight="bold", size=20),
