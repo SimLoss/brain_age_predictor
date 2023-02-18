@@ -55,11 +55,11 @@ scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
 
 #MODELS
 models = {
-    #"DDNregressor": AgeRegressor(verbose=False),
+    "DDNregressor": AgeRegressor(verbose=False),
     "Linear_Regression": LinearRegression(),
-    #"Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    #"KNeighborsRegressor": KNeighborsRegressor(),
-    #"SVR": SVR(),
+    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
+    "KNeighborsRegressor": KNeighborsRegressor(),
+    "SVR": SVR(),
     }
 
 def predict_on_site(x_pred,
@@ -256,6 +256,6 @@ if __name__ == '__main__':
 
         #plot results in a summarizing barplot
         bar_plot(site_list, MAE, name_model, HARM_STATUS)
-        
+
     end_time = perf_counter()
     print(f"Elapsed time for prediction: {end_time-start_time}")
