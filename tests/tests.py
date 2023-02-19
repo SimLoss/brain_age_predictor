@@ -15,7 +15,6 @@ from brain_age_predictor.preprocess import (read_df,
                         add_WhiteVol_feature,
                         drop_covars,
                         normalization,
-                        train_scaler,
                         neuroharmonize)
 
 class TestBrainAge(unittest.TestCase):
