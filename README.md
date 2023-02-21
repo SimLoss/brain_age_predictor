@@ -106,14 +106,15 @@ brain_age_pred.py [-h]
 
 optional arguments:
   -h, --help            show this help message and exit
+  
   -dp DATAPATH, --datapath DATAPATH
                         Path to the data folder.
-  -loso, --losocv       Use Leave-One-Site-Out CV to train and fit models.
+
   -grid, --gridcv       Use GridSearch cross validation to train and fit models.
+  
   -fitgrid, --fitgridcv
-                        Make predictions with models pre-trainde with GridSearchCV.
-  -fitloso, --fitlosocv
-                        Make predictions with models pre-trainde with LOSO-CV.
+                        Make predictions with pre-trained models with GridSearchCV.
+
   -neuroharm, --harmonize
                         Use NeuroHarmonize to harmonize data by provenance site.
 

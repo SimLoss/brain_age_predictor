@@ -2,7 +2,7 @@
 
 """
 Main module in which different models are being compared on ABIDE dataset.
-Training, fit and prediction will be performed using datas from a specific
+Training and prediction will be performed using datas from a specific
 site as test set, the others as train.
 User must specify if harmonization by provenance site should be performed,
 using the proper command from terminal(see helper). If nothing's being stated,
@@ -107,13 +107,13 @@ def predict_on_site(x_pred,
     score_metrics = {
                     "MSE": round(mean_squared_error(y_pred,
                                                     age_predicted),
-                                3),
+                                1),
                     "MAE": round(mean_absolute_error(y_pred,
                                                     age_predicted),
-                                3),
+                                1),
                     "PR":  np.around(pearsonr(y_pred,
                                         age_predicted)[0],
-                                3)
+                                1)
                     }
     MAE = score_metrics['MAE']
 
@@ -271,7 +271,7 @@ if __name__ == '__main__':
                   fontsize = 20)
         plt.yticks(fontsize=18)
         plt.xticks(fontsize=18, rotation=50)
-        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE):.3f} [years]",
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.1f} \u00B1 {np.std(MAE):.1f} [years]",
                                      loc=1,
                                      prop=dict(fontweight="bold", size=20),
                                      borderpad=0.,

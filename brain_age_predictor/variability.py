@@ -184,7 +184,7 @@ if __name__ == '__main__':
                   fontsize = 20)
         plt.yticks(fontsize=18)
         plt.xticks(fontsize=18, rotation=50)
-        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.3f} \u00B1 {np.std(MAE):.3f} [years]",
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.1f} \u00B1 {np.std(MAE):.1f} [years]",
                                      loc=1,
                                      prop=dict(fontweight="bold", size=20),
                                      borderpad=0.,

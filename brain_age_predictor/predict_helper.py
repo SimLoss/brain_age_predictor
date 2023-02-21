@@ -39,18 +39,22 @@ def plot_scores(y_test,
     mse, mae, pr = metrics["MSE"], metrics["MAE"], metrics["PR"]
 
     ax = plt.subplots(figsize=(8, 8))[1]
-    ax.scatter(y_test, age_predicted,
-               marker="*", c="r",
-               label="True age"
+    ax.scatter(y_test,
+                age_predicted,
+                marker="*",
+                c="r",
               )
     plt.xlabel("Ground truth Age [years]", fontsize=18)
     plt.ylabel("Predicted Age [years]", fontsize=18)
-    plt.plot(
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        c="b",
-        label="Prediction",
-    )
+    ax.set_ylim(0, 40)
+    ax.set_xlim(0,40)
+    ax.plot(ax.get_xlim(),
+            ax.get_ylim(),
+            ls="--",
+            c="blue",
+            label="Expected prediction"
+            )
+    plt.axis('scaled')
     plt.title(f"Predicted vs real subject's age with"
               f" \n{model_name} model",
               fontsize=20)

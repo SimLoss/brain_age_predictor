@@ -11,12 +11,12 @@ on test set.
 Workflow:
     1. Read the ABIDE dataframe and make some preprocessing.
     2. Split dataframe into cases and controls, the latter (CTR) in
-    train and test set. Scale the datasets.
+    train and test set.
     3. Cross validation on training set.
         Best models setting will be saved in "best estimator" folder.
     4. Best models are used to predict age on CTR train and test set and, finally,
         on ASD dataset for a comparison of prediction between healthy subjects and
-        the ones with ASD.
+        cases.
 
 For each dataset, all plots will be saved in "images" folder.
 
@@ -53,11 +53,11 @@ np.random.seed(SEED)
 
 #MODELS
 models = {
-    "DDNregressor": AgeRegressor(verbose=False),
-    "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
+    "DDNregressor": AgeRegressor(verbose=True),
+    #"Linear_Regression": LinearRegression(),
+    #"Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
+    #"KNeighborsRegressor": KNeighborsRegressor(),
+    #"SVR": SVR(),
     }
 
 def make_predict(dataframe, model_name, harm_flag=False):
@@ -110,13 +110,13 @@ def make_predict(dataframe, model_name, harm_flag=False):
     score_metrics = {
                     "MSE": round(mean_squared_error(y_test,
                                                     age_predicted),
-                                3),
+                                1),
                     "MAE": round(mean_absolute_error(y_test,
                                                     age_predicted),
-                                3),
+                                1),
                     "PR":  np.around(pearsonr(y_test,
                                         age_predicted)[0],
-                                3)
+                                1)
                     }
     return age_predicted, y_test, score_metrics
 
