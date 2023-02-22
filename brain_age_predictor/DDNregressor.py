@@ -6,7 +6,6 @@ Module for Deep Dense Network implementation.
 
 import os
 
-import absl.logging
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -16,13 +15,12 @@ from sklearn.base import BaseEstimator
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 #setting seed for reproducibility
-SEED = 42
-np.random.seed(SEED)
-tf.keras.utils.set_random_seed(SEED)
+tf.keras.utils.set_random_seed(42)
+np.random.seed(42)
 #clearing previous keras sessions
 tf.keras.backend.clear_session()
-absl.logging.set_verbosity(absl.logging.ERROR)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#setting tensorflow verbosity
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 ##############################
 class AgeRegressor(BaseEstimator):
@@ -54,27 +52,28 @@ class AgeRegressor(BaseEstimator):
     Examples
     --------
     _________________________________________________________________
-     Layer (type)                Output Shape              Param #
-    =================================================================
-     input_1 (InputLayer)        [(None, 420)]             0
 
-     dense (Dense)               (None, 128)               53888
+     Layer
+      (type)                Output Shape              Param #
+    _________________________________________________________________
+
+     input_1 (InputLayer)        [(None, 64)]              0
+
+     dense (Dense)               (None, 128)               8320
 
      dense_1 (Dense)             (None, 64)                8256
 
-     dense_2 (Dense)             (None, 64)                4160
-
-     dense_3 (Dense)             (None, 32)                2080
+     dense_2 (Dense)             (None, 32)                2080
 
      dropout (Dropout)           (None, 32)                0
 
-     dense_4 (Dense)             (None, 16)                528
+     dense_3 (Dense)             (None, 16)                528
 
-     dense_5 (Dense)             (None, 1)                 17
+     dense_4 (Dense)             (None, 1)                 17
 
-    =================================================================
-    Total params: 68,929
-    Trainable params: 68,929
+    _________________________________________________________________
+    Total params: 19,201
+    Trainable params: 19,201
     Non-trainable params: 0
     _________________________________________________________________
 
@@ -92,7 +91,7 @@ class AgeRegressor(BaseEstimator):
         self.dropout_rate = dropout_rate
         self.verbose= verbose
 
-    def fit(self, X, y):
+    def fit(self, X, y, call_backs=None, val_data=None):
         """
         Fit method. Builds the NN and fits using MAE.
 
@@ -109,7 +108,6 @@ class AgeRegressor(BaseEstimator):
         inputs = Input(shape=X.shape[1])
         hidden = Dense(128, activation="relu")(inputs)
         hidden = Dense(64, activation="relu")(hidden)
-        hidden = Dense(64, activation="relu")(hidden)
         hidden = Dense(32, activation="relu")(hidden)
         hidden = Dropout(self.dropout_rate)(hidden)
         hidden = Dense(16, activation="relu")(hidden)
@@ -125,30 +123,21 @@ class AgeRegressor(BaseEstimator):
         if self.verbose:
             self.model.summary()
 
-        callbacks = [EarlyStopping(monitor="val_MAE",
-                                   patience=10,
-                                   verbose=1),
-                    ReduceLROnPlateau(monitor='val_MAE',
-                                      factor=0.1,
-                                      patience=5,
-                                      verbose=1)
-                    ]
-
         history = self.model.fit(X,
                                  y,
-                validation_split=0.2,
-                epochs=self.epochs,
-                callbacks=callbacks,
-                batch_size=self.batch_size,
-                verbose=1)
+                                 validation_data=val_data,
+                                 epochs=self.epochs,
+                                 callbacks=call_backs,
+                                 batch_size=self.batch_size,
+                                 verbose=1)
 
-        if self.verbose:
+        if (self.verbose and val_data is not None):
             plt.plot(history.history["loss"])
             plt.plot(history.history["val_loss"])
-            plt.title('Model loss')
-            plt.ylabel('Loss')
+            plt.title('DDN Regressor loss')
+            plt.ylabel('MAE [years]')
             plt.xlabel('Epochs')
-            plt.legend(['train', 'validation'], loc='upper right')
+            plt.legend(['Train', 'Validation'], loc='upper right')
             plt.show()
 
         return self.model

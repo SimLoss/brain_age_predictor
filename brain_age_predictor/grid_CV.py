@@ -8,13 +8,12 @@ hyperparameters and parameters optimization.
 import pickle
 
 import numpy as np
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import RobustScaler
 from sklearn.pipeline import Pipeline
-from sklearn.feature_selection import f_regression
 
 from preprocess import drop_covars
-#setting random state for reproducibility
 
 def model_tuner_cv(dataframe, model, model_name, harm_flag):
     """
@@ -50,6 +49,7 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
                                  "Feature__score_func": [f_regression],
                                  "Model__dropout_rate": [0.2, 0.3],
                                  "Model__batch_size": [32, 64],
+                                 "Model__epochs": [50, 100, 200]
                                 },
 
                 "Linear_Regression": {"Feature__k": [10, 20, 30],
@@ -61,8 +61,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
                                             "Model__n_estimators": [10, 100, 300],
                                             "Model__max_features": ["sqrt", "log2"],
                                             "Model__max_depth": [3, 4, 5, 6],
-                                            "Model__random_state": [42],
-                                           },
+                                            "Model__random_state": [42]
+                                            },
 
                "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
@@ -92,11 +92,12 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
         pass
 
     #Pipeline for setting subsequential working steps each time a model is
-    #called on some data. It distinguish between train/test/val set, fitting the
+    #called on some data. It distinguish between train/test set, fitting the
     #first and only transforming the latters.
     pipe = Pipeline(
     steps=[
-        ("Feature", SelectKBest()),
+        ("Feature", SelectKBest(score_func=f_regression)),
+        ("Scaler", RobustScaler()),
         ("Model", model)
         ]
     )
@@ -122,8 +123,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
     std_mse_val = np.std(model_cv.cv_results_["mean_test_neg_mean_squared_error"])
 
     print("\nCross-Validation: metrics scores (mean values) on validation set:")
-    print(f"MAE:{np.around(MAE_val,3)} \u00B1 {np.around(std_mae_val,3)} [years^2]")
-    print(f"MSE:{np.around(MSE_val,3)} \u00B1 {np.around(std_mse_val,3)} [years]")
+    print(f"MAE:{np.around(MAE_val,3)} \u00B1 {np.around(std_mae_val,3)} [years]")
+    print(f"MSE:{np.around(MSE_val,3)} \u00B1 {np.around(std_mse_val,3)} [years^2]")
 
     #saving results on disk folder "../best_estimator"
     if harm_flag is True:
@@ -132,8 +133,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
         saved_name = model_name + '_Unharmonized'
     try:
         with open(
-            f'best_estimator/grid/{saved_name}.pkl', 'wb'
+            f'best_estimator/{saved_name}.pkl', 'wb'
         ) as file:
             pickle.dump(model_best, file)
     except Exception as exc:
-        raise IOError("Folder \'/best_estimator/grid\' not found.") from exc
+        raise IOError("Folder \'/best_estimator' not found.") from exc

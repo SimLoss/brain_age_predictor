@@ -2,7 +2,7 @@
 
 """
 Main module in which different models are being compared on ABIDE dataset.
-Training, fit and prediction will be performed using datas from a specific
+Training and prediction will be performed using datas from a specific
 site as test set, the others as train.
 User must specify if harmonization by provenance site should be performed,
 using the proper command from terminal(see helper). If nothing's being stated,
@@ -16,7 +16,9 @@ Workflow:
 3. Cross validation on training set.
 4. Predict on site test set.
 
-For each splitting, all plots will be saved in "images_SITE" folder.
+For each splitting, all plots will be saved in "images_SITE" folder. Metrics
+obtained from each cross validation are stored in "/metrics/site" folder.
+
 """
 import os
 import sys
@@ -34,107 +36,23 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import RobustScaler
+from sklearn.feature_selection import SelectKBest,  f_regression
+from sklearn.pipeline import Pipeline
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
 from prettytable import PrettyTable
 
 from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        drop_covars,
-                        test_scaler,
-                        train_scaler)
+                        drop_covars)
 from DDNregressor import AgeRegressor
 
-#setting seed for reproducibility
-SEED = 42
-np.random.seed(SEED)
-#shutting down annoying warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 #SCORINGS
 scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
 
-#MODELS
-models = {
-    "DDNregressor": AgeRegressor(verbose=False),
-    "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
-    }
-
-
-def plot_scores_on_site(true_age,
-                age_predicted,
-                metrics,
-                model_name,
-                site_name,
-                dataframe_name
-                ):
-    """
-    Plots the results of the predictions vs ground truth with related metrics
-    scores.
-
-    Parameters
-    ----------
-
-    true_age : pandas dataframe
-             Pandas dataframe column containing the ground truth age.
-
-    age_predicted : array-like
-                    Array containing the predicted age of each subject.
-
-    metrics : dictionary
-             Dictionary containing names of metrics as keys and result metrics .
-             for a specific model as values.
-
-    model_name : string
-                Model's name.
-
-    site_name : string
-               Site's name.
-
-    dataframe_name : string
-                    Dataframe's name, DEFAULT="Train dataset".
-    """
-    mse, mae, pr = metrics["MSE"], metrics["MAE"], metrics["PR"]
-
-    ax = plt.subplots(figsize=(8, 8))[1]
-    ax.scatter(true_age, age_predicted,
-               marker="*", c="r",
-               label="True age"
-              )
-    plt.xlabel("Ground truth Age [years]", fontsize=18)
-    plt.ylabel("Predicted Age [years]", fontsize=18)
-    plt.plot(
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        c="b",
-        label="Prediction",
-    )
-    plt.title(f"Predictions using {model_name} model",
-              fontsize=20)
-    plt.yticks(fontsize=18)
-    plt.xticks(fontsize=18)
-    plt.legend(loc="upper left", fontsize=14)
-    anchored_text = AnchoredText(f"Test set: {site_name}"
-                                 f"\n{dataframe_name} results:"
-                                 f"\n MAE= {mae} [years]"
-                                 f"\n MSE= {mse} [years^2]"
-                                 f"\n PR= {pr}",
-                                 loc=4,
-                                 borderpad=0.,
-                                 frameon=True,
-                                 prop=dict(fontweight="bold"),
-                                )
-    ax.add_artist(anchored_text)
-
-    plt.savefig(
-                f"images_SITE/{dataframe_name}_{model_name}_{site_name}.png",
-                dpi=200,
-                format="png",
-                bbox_inches="tight",
-                )
 
 
 def predict_on_site(x_pred,
@@ -142,7 +60,7 @@ def predict_on_site(x_pred,
                     model,
                     site_name,
                     model_name,
-                    harm_flag):
+                    harm_opt):
     """
     Plots the results of the predictions vs ground truth with related metrics
     scores.
@@ -162,8 +80,8 @@ def predict_on_site(x_pred,
     model_name : string
                 Model's name.
 
-    harm_flag : boolean.
-                Flag indicating if the dataframe has been previously harmonized.
+    harm_opt : string.
+                String indicating if the dataframe has been previously harmonized.
     Returns
     -------
     age_predicted :  array-like
@@ -178,36 +96,27 @@ def predict_on_site(x_pred,
     score_metrics = {
                     "MSE": round(mean_squared_error(y_pred,
                                                     age_predicted),
-                                3),
+                                1),
                     "MAE": round(mean_absolute_error(y_pred,
                                                     age_predicted),
-                                3),
+                                1),
                     "PR":  np.around(pearsonr(y_pred,
                                         age_predicted)[0],
-                                3)
+                                1)
                     }
+    MAE = score_metrics['MAE']
 
-    if harm_flag is True:
-        table = PrettyTable(["Metrics"]+[site_name])
-        table.add_row(["MAE"]+[score_metrics['MAE']])
-        table.add_row(["MSE"] + [score_metrics['MSE']])
-        table.add_row(["PR"] + [score_metrics['PR']])
-        data_table = table.get_string()
+    table = PrettyTable(["Metrics"]+[site_name])
+    table.add_row(["MAE"]+[score_metrics['MAE']])
+    table.add_row(["MSE"] + [score_metrics['MSE']])
+    table.add_row(["PR"] + [score_metrics['PR']])
+    data_table = table.get_string()
 
-        with open( f"metrics/site/{site_name}_{model_name}_Harmonized.txt",
-                   'w') as file:
-            file.write(data_table)
-    else:
-        header = "MSE\t" + "MAE\t" + "PR\t"
-        metrics = np.array([score_metrics['MSE'],
-                            score_metrics['MAE'],
-                            score_metrics['PR']])
-        metrics = np.array(metrics).T
-        np.savetxt( f"metrics/site/{site_name}_{model_name}_Unharmonized.txt",
-                    metrics,
-                    header=header)
+    with open( f"metrics/site/{site_name}_{model_name}_{harm_opt}.txt",
+               'w') as file:
+        file.write(data_table)
 
-    return age_predicted, score_metrics
+    return age_predicted, MAE
 
 ########################## MAIN
 if __name__ == '__main__':
@@ -236,7 +145,25 @@ if __name__ == '__main__':
         action='store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
+
+    parser.add_argument(
+        "-verb",
+        "--verbose",
+        action='store_true',
+        help="Set DDN Regressor model's verbosity. If True, it shows CV plots and model summary. Default = False"
+        )
+
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+    #MODELS
+    models = {
+        "DDNregressor": AgeRegressor(verbose=args.verbose),
+        "Linear_Regression": LinearRegression(),
+        "Random_Forest_Regressor": RandomForestRegressor(random_state=42),
+        "KNeighborsRegressor": KNeighborsRegressor(),
+         "SVR": SVR(),
+        }
+
     #=============================================================
     # STEP 1: Read the ABIDE dataframe and make some preprocessing.
     #============================================================
@@ -257,9 +184,11 @@ if __name__ == '__main__':
 
     if args.harmonize:
         nh_flag = args.harmonize
+        HARM_STATUS = 'Harmonized'
         df = neuroharmonize(df)
     else:
         nh_flag = args.harmonize
+        HARM_STATUS = 'Unharmonized'
     start_time = perf_counter()
     #=======================================================
     # STEP 2: Splitting the dataset into ASD and CTR groups.
@@ -271,20 +200,14 @@ if __name__ == '__main__':
     site_list = CTR.SITE.unique()
 
     #Looping on models and sites for fitting and evaluating the scores
-    for site in site_list:
-        #split CTR dataset into train and test: one site will be used as test, the
-        #rest as training
-        for name_model, regressor in models.items():
+    for name_model, regressor in models.items():
+        MAE = []
+        for site in site_list:
+            #split CTR dataset into train and test: one site will be used as test, the
+            #rest as training
             print(f"\nUsing {site} as test set.")
             CTR_test = CTR.loc[CTR['SITE'] == f'{site}']
             CTR_train = CTR.drop(CTR[CTR.SITE == f'{site}'].index, axis=0)
-
-            #initializing a scaler and scaling train set
-            rob_scaler = RobustScaler()
-            CTR_train = train_scaler(CTR_train, rob_scaler, nh_flag)
-
-            #using fitted scaler to transform test/ASD sets
-            CTR_test = test_scaler(CTR_test, rob_scaler, nh_flag, "CTR_test")
 
             x, y = drop_covars(CTR_train)[0], CTR_train['AGE_AT_SCAN']
             x_test, y_test = drop_covars(CTR_test)[0], CTR_test['AGE_AT_SCAN']
@@ -295,65 +218,122 @@ if __name__ == '__main__':
                 y_test = y_test.to_numpy()
             except AttributeError:
                 pass
+
+            #================================
+            # STEP 3: KFold cross validation.
+            #================================
             #initializing metrics arrays for validation scores
             mse_val = np.array([])
             mae_val = np.array([])
             pr_val = np.array([])
-            #================================
-            # STEP 3: KFold cross validation.
-            #================================
-            cv = KFold(n_splits=5, shuffle=True, random_state=SEED)
 
+            cv = KFold(n_splits=5, shuffle=True, random_state=42)
             for train_index, val_index in cv.split(x, y):
-                model_fit = regressor.fit(x[train_index], y[train_index])
-                predict_y_train = model_fit.predict(x[train_index])
-                y[val_index] = np.squeeze(y[val_index])
-                predict_y_val = model_fit.predict(x[val_index])
+                #here we build a step by step cross-validation for monitoring
+                #overfitting and make use of callbacks for DDNregressor
+                if name_model == "DDNregressor":
+                    #here we scale the train/val set
+                    scaler = RobustScaler()
+                    x[train_index] = scaler.fit_transform(x[train_index])
+                    x[val_index] = scaler.transform(x[val_index])
+                    #selecting the best 20 features
+                    select = SelectKBest(score_func=f_regression, k=30)
+                    select.fit_transform(x[train_index],y[train_index])
+                    select.transform(x[val_index])
 
-                mse_val = np.append(mse_val, mean_squared_error(y[val_index],
-                                                                predict_y_val))
-                mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
-                                                                predict_y_val))
-                pr_val = np.append(pr_val, pearsonr(y[val_index],
+                    callbacks = [EarlyStopping(monitor="val_MAE",
+                                                patience=10,
+                                                verbose=1),
+
+                                ReduceLROnPlateau(monitor='val_MAE',
+                                                  factor=0.1,
+                                                  patience=5,
+                                                  verbose=1)
+                                    ]
+
+                    model_fit = regressor.fit(x[train_index],
+                                              y[train_index],
+                                              call_backs=callbacks,
+                                              val_data=(x[val_index], y[val_index]),
+                                              )
+
+                    y[val_index] = np.squeeze(y[val_index])
+                    predict_y_val = model_fit.predict(x[val_index])
+
+
+
+                    mse_val = np.append(mse_val, mean_squared_error(y[val_index],
+                                                                    predict_y_val))
+                    mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
+                                                                    predict_y_val))
+                    pr_val = np.append(pr_val, pearsonr(y[val_index],
+                                                    predict_y_val)[0])
+
+                    x_test = scaler.transform(x_test)
+                    select.transform(x_test)
+
+                else:
+                    pipe = Pipeline(
+                    steps=[
+                        ("Feature", SelectKBest(score_func=f_regression, k=30)),
+                        ("Scaler", RobustScaler()),
+                        ("Model", regressor)
+                        ]
+                    )
+
+                    model_fit = pipe.fit(x[train_index], y[train_index])
+                    y[val_index] = np.squeeze(y[val_index])
+                    predict_y_val = model_fit.predict(x[val_index])
+
+                    mse_val = np.append(mse_val, mean_squared_error(y[val_index],
+                                                                    predict_y_val))
+                    mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
+                                                                    predict_y_val))
+                    pr_val = np.append(pr_val, pearsonr(y[val_index],
                                                     predict_y_val)[0])
 
             print(f"\nCross-Validation: {name_model} metric scores on validation set.")
             print(f"MSE:{np.mean(mse_val):.3f} \u00B1 {np.around(np.std(mse_val), 3)} [years^2]")
             print(f"MAE:{np.mean(mae_val):.3f} \u00B1 {np.around(np.std(mae_val), 3)} [years]")
             print(f"PR:{np.mean(pr_val):.3f} \u00B1 {np.around(np.std(pr_val), 3)}")
+
             #==================================
             # STEP 4: Predict on site test set.
             #==================================
-            age_predicted_train, score_metrics_train = predict_on_site(x,
-                                                                       y,
-                                                                       model_fit,
-                                                                       site,
-                                                                       name_model,
-                                                                       nh_flag
-                                                                       )
-            #plot results
-            plot_scores_on_site(y,
-                        age_predicted_train,
-                        score_metrics_train,
-                        name_model,
-                        site,
-                        CTR_train.attrs['name'],
-                        )
 
-            age_predicted_test, score_metrics_test = predict_on_site(x_test,
-                                                                     y_test,
-                                                                     model_fit,
-                                                                     site,
-                                                                     name_model,
-                                                                     nh_flag
-                                                                     )
-            plot_scores_on_site(y_test,
-                        age_predicted_test,
-                        score_metrics_test,
-                        name_model,
-                        site,
-                        CTR_test.attrs['name'],
-                        )
+            age_predicted_test, site_MAE = predict_on_site(x_test,
+                                                             y_test,
+                                                             model_fit,
+                                                             site,
+                                                             name_model,
+                                                             HARM_STATUS
+                                                             )
+
+            MAE.append(site_MAE)
+
+        #plot results in a summarizing barplot
+        fig, ax = plt.subplots(figsize=(22, 16))
+        bars = plt.bar(site_list, MAE)
+        ax.bar_label(bars, fontsize=16)
+        plt.xlabel("Sites", fontsize=20)
+        plt.ylabel("Mean Absolute Error", fontsize=20)
+        plt.title(f"MAE using {name_model} of {HARM_STATUS} sites' data ",
+                  fontsize = 20)
+        plt.yticks(fontsize=18)
+        plt.xticks(fontsize=18, rotation=50)
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.1f} \u00B1 {np.std(MAE):.1f} [years]",
+                                     loc=1,
+                                     prop=dict(fontweight="bold", size=20),
+                                     borderpad=0.,
+                                     frameon=True,
+                                    )
+        ax.add_artist(anchored_text)
+        plt.savefig(f"images_SITE/site/ Sites {HARM_STATUS} with {name_model}.png",
+            dpi=300,
+            format="png",
+            bbox_inches="tight"
+            )
+        plt.show()
 
     end_time = perf_counter()
     print(f"Elapsed time for prediction: {end_time-start_time}")

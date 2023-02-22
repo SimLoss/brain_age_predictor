@@ -1,7 +1,7 @@
 # pylint: disable=locally-disabled, import-error
 """
 Main module in which different models are being compared on ABIDE dataset using
-different cross validation: GridSearchCV and Leave-One-Site-Out CV.
+GridSearchCV.
 User must specify if harmonization by provenance site should be performed,
 using the proper command from terminal(see helper). If nothing's being stated,
 harmonization won't be performed.
@@ -11,12 +11,12 @@ on test set.
 Workflow:
     1. Read the ABIDE dataframe and make some preprocessing.
     2. Split dataframe into cases and controls, the latter (CTR) in
-        train and test set. Scale the datasets.
+    train and test set.
     3. Cross validation on training set.
-       Best models setting will be saved in "best estimator" folder.
+        Best models setting will be saved in "best estimator" folder.
     4. Best models are used to predict age on CTR train and test set and, finally,
-       on ASD dataset for a comparison of prediction between healthy subjects and
-       the ones with ASD.
+        on ASD dataset for a comparison of prediction between healthy subjects and
+        cases.
 
 For each dataset, all plots will be saved in "images" folder.
 
@@ -27,7 +27,7 @@ import pickle
 import argparse
 from time import perf_counter
 
-import tensorflow
+import tensorflow as tf
 import numpy as np
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
@@ -42,31 +42,15 @@ from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
                         df_split,
-                        drop_covars,
-                        test_scaler,
-                        train_scaler)
+                        drop_covars)
 from grid_CV import model_tuner_cv
-from loso_CV import losocv
 from predict_helper import plot_scores, residual_plot
 from DDNregressor import AgeRegressor
 
-#setting SEED for reproducibility
-SEED = 42
-np.random.seed(SEED)
-#shutting down annoying warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-#clear tensorflow session at each run
-tensorflow.keras.backend.clear_session()
-#MODELS
-models = {
-    "DDNregressor": AgeRegressor(verbose=False),
-    "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
-    }
+tf.keras.utils.set_random_seed(42)
 
-def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
+
+def make_predict(dataframe, model_name, harm_flag=False):
     """
     Loads pre-trained model to make prediction on "unseen" test datas.
 
@@ -82,10 +66,6 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
 
     harm_flag : boolean, DEFAULT=False.
                 Flag indicating if the dataframe has been previously harmonized.
-
-    cv_flag : boolean, DEFAULT=False.
-            Flag indicating which kind of cross validatio has been performed.
-            True: GridSearCV, False: Leave-Out-Single-Site CV.
 
     Returns
     -------
@@ -105,21 +85,13 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     else:
         saved_name = model_name + '_Unharmonized'
 
-    #selecting the model to load to make prediction
-    if cv_flag is True:
-        try:
-            with open(f"best_estimator/grid/{saved_name}.pkl", "rb") as file:
-                model_fit = pickle.load(file)
-        except Exception as exc:
-            raise FileNotFoundError("Directory or file not found."
-                    +"Models must be trained first.") from exc
-    else:
-        try:
-            with open(f"best_estimator/loso/{saved_name}.pkl", "rb") as file:
-                model_fit = pickle.load(file)
-        except:
-            raise FileNotFoundError("Directory or file not found."
-                    +"Models must be trained first.") from exc
+    try:
+        with open(f"best_estimator/{saved_name}.pkl", "rb") as file:
+            model_fit = pickle.load(file)
+    except Exception as exc:
+        raise FileNotFoundError("Directory or file not found."
+                +"Models must be trained first.") from exc
+
     #prediction
     x_test = drop_covars(dataframe)[0]
     y_test = dataframe['AGE_AT_SCAN']
@@ -128,13 +100,13 @@ def make_predict(dataframe, model_name, harm_flag=False, cv_flag=False):
     score_metrics = {
                     "MSE": round(mean_squared_error(y_test,
                                                     age_predicted),
-                                3),
+                                1),
                     "MAE": round(mean_absolute_error(y_test,
                                                     age_predicted),
-                                3),
+                                1),
                     "PR":  np.around(pearsonr(y_test,
                                         age_predicted)[0],
-                                3)
+                                1)
                     }
     return age_predicted, y_test, score_metrics
 
@@ -153,13 +125,6 @@ if __name__ == '__main__':
         )
 
     parser.add_argument(
-        "-loso",
-        "--losocv",
-        action='store_true',
-        help="Use Leave-One-Site-Out CV to train and fit models."
-        )
-
-    parser.add_argument(
         "-grid",
         "--gridcv",
         action='store_true',
@@ -167,19 +132,11 @@ if __name__ == '__main__':
         )
 
     parser.add_argument(
-        "-fitgrid",
-        "--fitgridcv",
+        "-pred",
+        "--predict",
         action='store_true',
-        help="Make predictions with models pre-trainde with GridSearchCV."
+        help="Make predictions with models pre-trained with GridSearchCV."
         )
-
-    parser.add_argument(
-        "-fitloso",
-        "--fitlosocv",
-        action='store_true',
-        help="Make predictions with models pre-trainde with LOSO-CV."
-        )
-
 
     parser.add_argument(
         "-neuroharm",
@@ -187,11 +144,30 @@ if __name__ == '__main__':
         action='store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
+
+    parser.add_argument(
+        "-verb",
+        "--verbose",
+        action='store_true',
+        help="Set DDN Regressor model's verbosity. If True, it shows model summary."
+            "Default = False"
+        )
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+    #MODELS
+    models = {
+        "DDNregressor": AgeRegressor(verbose=args.verbose),
+        "Linear_Regression": LinearRegression(),
+        "Random_Forest_Regressor": RandomForestRegressor(),
+        "KNeighborsRegressor": KNeighborsRegressor(),
+        "SVR": SVR(),
+        }
+
 
     #=============================================================
     # STEP 1: Read the ABIDE dataframe and make some preprocessing.
-    #============================================================
+    #=============================================================
+
     try:
         datapath = args.datapath
         df = read_df(datapath)
@@ -221,36 +197,30 @@ if __name__ == '__main__':
     #split CTR dataset into train and test.
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
-                                           random_state=SEED)
-    #scaling train set
-    rob_scaler = RobustScaler()
-    df_CTR_train = train_scaler(CTR_train, rob_scaler, NH_FLAG)
-
-    #using fitted scaler to transform test/ASD sets
-    df_CTR_test = test_scaler(CTR_test, rob_scaler, NH_FLAG, "df_CTR_test")
-    df_ASD = test_scaler(ASD, rob_scaler, NH_FLAG, "df_ASD")
-
-    #==========================================
-    # STEP 3: Cross Validation on training set.
-    #==========================================
+                                           random_state=42)
+    if NH_FLAG is True:
+        CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
+        CTR_test.attrs['name'] = 'df_CTR_test_Harmonized'
+        ASD.attrs['name'] = 'df_ASD_Harmonized'
+    else:
+        CTR_train.attrs['name'] = 'df_CTR_train_Unharmonized'
+        CTR_test.attrs['name'] = 'df_CTR_test_Unharmonized'
+        ASD.attrs['name'] = 'df_ASD_Unharmonized'
+    #===================================================================
+    # STEP 3: Cross Validation on training set (only if gridcv is True).
+    #===================================================================
     start = perf_counter()
     for name_regressor, regressor in models.items():
 
         if args.gridcv:
             #Performing GridSearch Cross Validation
-            DIR_FLAG = True
-            best_hyp_estimator = model_tuner_cv(df_CTR_train,
+            best_hyp_estimator = model_tuner_cv(CTR_train,
                                                 regressor,
                                                 name_regressor,
                                                 NH_FLAG)
 
-        if args.losocv:
-            #performing Leave-One-Site-Out cross validation
-            DIR_FLAG = False
-            losocv(df_CTR_train,
-                  regressor,
-                  name_regressor,
-                  NH_FLAG)
+        if not (args.gridcv or args.predict):
+            parser.error('Required one of the following arguments: -grid, -pred')
 
     stop = perf_counter()
     print(f"Elapsed time for model tuning and CV: {stop-start} s")
@@ -258,33 +228,21 @@ if __name__ == '__main__':
     #=======================================================
     # STEP 4: Prediction on test/ASD set and results' plots.
     #=======================================================
-    df_list = [df_CTR_train, df_CTR_test, df_ASD]
-    #computing predictions with fitted models then plotting results
-    if args.fitgridcv:
-        DIR_FLAG = True
+    df_list = [CTR_train, CTR_test, ASD]
 
-    if args.fitlosocv:
-        DIR_FLAG = False
-
-
-    if not (args.losocv or args.gridcv or args.fitgridcv or args.fitlosocv):
-        parser.error('Required one of the following arguments: -grid, -loso,'
-                    ' -fitgrid, -fitloso')
     #make prediction and plot scores
     pred = {}
     for name_regressor in models:
         for dframe in df_list:
             predicted_age, true_age, metrics_score= make_predict(dframe,
                                                                 name_regressor,
-                                                                NH_FLAG,
-                                                                DIR_FLAG)
+                                                                NH_FLAG)
 
             pred[dframe.attrs['name']]=[true_age, predicted_age]
 
             plot_scores(true_age,
                         predicted_age,
                         metrics_score,
-                        DIR_FLAG,
                         name_regressor,
                         dframe.attrs['name'],
                         )
@@ -295,13 +253,11 @@ if __name__ == '__main__':
                           pred['df_ASD_Harmonized'][0],
                           pred['df_ASD_Harmonized'][1],
                           name_regressor,
-                          DIR_FLAG
-                          )
+                          NH_FLAG)
         else:
             residual_plot(pred['df_CTR_test_Unharmonized'][0],
                           pred['df_CTR_test_Unharmonized'][1],
                           pred['df_ASD_Unharmonized'][0],
                           pred['df_ASD_Unharmonized'][1],
                           name_regressor,
-                          DIR_FLAG
-                         )
+                          NH_FLAG)

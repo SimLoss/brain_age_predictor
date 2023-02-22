@@ -2,22 +2,21 @@ import unittest
 from pathlib import Path
 import os
 import sys
-
-
+from sklearn.preprocessing import RobustScaler
 #to run locally
 #package_name = "../brain_age_predictor"
 sys.path.insert(0, str(Path(os.getcwd()).parent))
-package_name = "../brain_age_predictor"
+package_name = "brain_age_predictor"
 
 sys.path.insert(0, package_name)
 
-from brain_age_predictor.preprocess import (readf_df,
-                                            df_split,
-                                            add_WhiteVol_feature,
-                                            drop_covars,
-                                            normalization,
-                                            train_scaler,
-                                            neuroharmonize)
+from brain_age_predictor.preprocess import (read_df,
+                        df_split,
+                        add_WhiteVol_feature,
+                        drop_covars,
+                        normalization,
+                        neuroharmonize)
+
 class TestBrainAge(unittest.TestCase):
     """
     Unit test for the microcal_classifier project.
@@ -78,18 +77,6 @@ class TestBrainAge(unittest.TestCase):
         self.assertTrue(all(scaled_df['TotalWhiteVol']<=1),
                             "Dataframe was not normalized")
 
-    def test_train_scaler(self):
-        """
-        Test for train_scaler function.
-        """
-        dataframe = read_df(self.data)
-        add_WhiteVol_feature(dataframe)
-        scaler = RobustScaler()
-        scaled_df = train_scaler(dataframe,
-                                scaler,
-                                harm_flag=True)
-        self.assertNotEqual(scaled_df['TotalWhiteVol'].to_numpy().all(),
-                            dataframe['TotalWhiteVol'].to_numpy().all())
 
     def test_neuroharmonize(self):
         """

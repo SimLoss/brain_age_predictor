@@ -10,7 +10,6 @@ from matplotlib.offsetbox import AnchoredText
 def plot_scores(y_test,
                 age_predicted,
                 metrics,
-                directory_flag,
                 model_name="Regressor model",
                 dataframe_name="Dataframe",
                 ):
@@ -40,18 +39,22 @@ def plot_scores(y_test,
     mse, mae, pr = metrics["MSE"], metrics["MAE"], metrics["PR"]
 
     ax = plt.subplots(figsize=(8, 8))[1]
-    ax.scatter(y_test, age_predicted,
-               marker="*", c="r",
-               label="True age"
+    ax.scatter(y_test,
+                age_predicted,
+                marker="*",
+                c="r",
               )
     plt.xlabel("Ground truth Age [years]", fontsize=18)
     plt.ylabel("Predicted Age [years]", fontsize=18)
-    plt.plot(
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        np.linspace(age_predicted.min(), age_predicted.max(), 10),
-        c="b",
-        label="Prediction",
-    )
+    ax.set_ylim(0, 40)
+    ax.set_xlim(0,40)
+    ax.plot(ax.get_xlim(),
+            ax.get_ylim(),
+            ls="--",
+            c="blue",
+            label="Expected prediction"
+            )
+    plt.axis('scaled')
     plt.title(f"Predicted vs real subject's age with"
               f" \n{model_name} model",
               fontsize=20)
@@ -69,19 +72,12 @@ def plot_scores(y_test,
                                 )
     ax.add_artist(anchored_text)
 
-    if directory_flag is True:
-        plt.savefig(
-                    f"images/gridCV/{dataframe_name}_{model_name}.png",
-                    dpi=200,
-                    format="png",
-                    bbox_inches="tight",
-                    )
-    else:
-        plt.savefig(f"images/losoCV/{dataframe_name}_{model_name}.png",
-                    dpi=200,
-                    format="png",
-                    bbox_inches="tight",
-                    )
+
+    plt.savefig(f"images/{dataframe_name}_{model_name}.png",
+                dpi=200,
+                format="png",
+                bbox_inches="tight",
+                )
 
     plt.show()
 
@@ -90,7 +86,7 @@ def residual_plot(true_age1,
                   true_age2,
                   pred_age2,
                   model_name,
-                  directory_flag):
+                  harm_flag):
     """
     Computes the difference(delta) between predicted age find with a
     specific model and true age on control test and ASD dataframes.
@@ -112,7 +108,17 @@ def residual_plot(true_age1,
     model_name : string-like
         Name of the model used for prediction.
 
+    harm_flag : boolean.
+        Flag indicating if the dataframe on which prediction was performed
+        has been previously harmonized.
+
     """
+
+    if harm_flag is True:
+        harm_status = "Harmonized"
+    else:
+        harm_status = "Unharmonized"
+
     plt.figure(figsize=(8, 8))
     plt.scatter(true_age1, pred_age1 - true_age1, c="b", label="Control")
     plt.scatter(true_age2, pred_age2 - true_age2, alpha=0.5, c="g", label="ASD")
@@ -140,15 +146,9 @@ def residual_plot(true_age1,
     plt.tick_params(axis="y", labelsize=18)
     plt.legend(loc="upper right", fontsize=14)
 
-    if directory_flag is True:
-        plt.savefig(
-            f"images/gridCV/delta_pred_{model_name}.png",
-            dpi=200,
-            format="png")
-    else:
-        plt.savefig(
-            f"images/losoCV/delta_pred_{model_name}.png",
-            dpi=200,
-            format="png")
+    plt.savefig(
+        f"images/delta_pred_{model_name}_{harm_status}.png",
+        dpi=200,
+        format="png")
 
     plt.show()

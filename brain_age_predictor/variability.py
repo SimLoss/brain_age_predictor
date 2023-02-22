@@ -3,6 +3,8 @@
 
 """
 Module testing the reproducibility of the results on each site's dataframe.
+If no argument is stated from command line, the program will be executed without
+data harmonization.
 The analysis will be performed on control subjects.
 """
 import sys
@@ -22,24 +24,20 @@ from prettytable import PrettyTable
 from preprocess import (read_df,
                         add_WhiteVol_feature,
                         neuroharmonize,
-                        df_split,
-                        train_scaler)
+                        df_split)
 from brain_age_pred import make_predict
 from predict_helper import plot_scores
 from DDNregressor import AgeRegressor
 
-#setting seed for reproducibility
-SEED = 42
 
 ###################################################
 #MODELS
-models = {
-    "DDNregressor": AgeRegressor(),
-    "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
-    }
+models = ["DDNregressor",
+          "Linear_Regression",
+          "Random_Forest_Regressor",
+          "KNeighborsRegressor",
+          "SVR"]
+
 ########################## MAIN
 if __name__ == '__main__':
 
@@ -56,6 +54,12 @@ if __name__ == '__main__':
         default= 'dataset/FS_features_ABIDE_males.csv'
         )
 
+    parser.add_argument('-s',
+                        '--start',
+                        help='Start script without harmonization.',
+                        action="store_const",
+                        const=True)
+
     parser.add_argument(
         "-verb",
         "--verbose",
@@ -68,20 +72,6 @@ if __name__ == '__main__':
         "--harmonize",
         action = 'store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
-        )
-
-    parser.add_argument(
-        "-loso",
-        "--losocv",
-        action = 'store_true',
-        help="Use models trained with Leave-One-Site-Out CV."
-        )
-
-    parser.add_argument(
-        "-grid",
-        "--gridcv",
-        action = 'store_true',
-        help="Use models trained with GridSearchCV."
         )
 
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
@@ -110,23 +100,11 @@ if __name__ == '__main__':
 
     #splitting data in ASD and CTR dataframe, taking only
     #the latter for further analysis.
-    ASD, CTR = df_split(df_ABIDE)
-    #initializing a scaler and scaling CTR set
-    rob_scaler = RobustScaler()
-    df_CTR = train_scaler(CTR,
-                          rob_scaler,
-                          nh_flag
-                          )
+    ASD, df_CTR = df_split(df_ABIDE)
 
     #creating a list of datas' provenance site.
     site_list = df_CTR.SITE.unique()
 
-    if args.losocv:
-        DIR_FLAG = False
-    if args.gridcv:
-        DIR_FLAG = True
-    if not (args.losocv or args.gridcv):
-        parser.error('Required one of the following arguments: -grid or -loso')
     #initializing and filling a dictionary that will contain
     #each different dataframe based on site.
     df_dict = {}
@@ -142,8 +120,7 @@ if __name__ == '__main__':
         for dataframe in df_dict.values():
             age_predicted, true_age, metrics= make_predict(dataframe,
                                                            model_name,
-                                                           nh_flag,
-                                                           DIR_FLAG
+                                                           nh_flag
                                                            )
 
             appender = lambda metric, key: metric.append(metrics[key])
@@ -171,9 +148,6 @@ if __name__ == '__main__':
             for thread in threads:
                 thr.join()
 
-            mean_s = np.mean(MAE)
-            std_s = np.std(MAE)
-
             #if verbose, plots the fit on each dataframe
             if args.verbose:
                 plot_scores(true_age, age_predicted,
@@ -181,6 +155,8 @@ if __name__ == '__main__':
                             dataframe.attrs['name']
                             )
 
+        mean_s = np.mean(MAE)
+        std_s = np.std(MAE)
         #printing a summarizing table with metrics per site
         print(f"Metrics for each site with {HARM_STATUS} dataset using {model_name} :")
         table = PrettyTable(["Metrics"]+[x for x in site_list])
@@ -188,35 +164,31 @@ if __name__ == '__main__':
         table.add_row(["MSE"] + [x for x in MSE])
         table.add_row(["PR"] + [x for x in PR])
 
-        if DIR_FLAG is True:
-            data_table = table.get_string()
-            with open( f'metrics/grid/metrics_{model_name}_{HARM_STATUS}.txt',
-                       'w', encoding="utf-8") as file:
-                file.write(data_table)
-
-        else:
-            data_table = table.get_string()
-            with open( f'metrics/loso/metrics_{model_name}_{HARM_STATUS}.txt',
-                       'w', encoding="utf-8") as file:
-                file.write(data_table)
+        data_table = table.get_string()
+        with open( f'metrics/grid/metrics_{model_name}_{HARM_STATUS}.txt',
+                   'w', encoding="utf-8") as file:
+            file.write(data_table)
 
         print(table)
+
         #making a comparative bar plot of MAE for site
         fig, ax = plt.subplots(figsize=(22, 16))
-        plt.bar(site_list, MAE)
+        bars = plt.bar(site_list, MAE)
+        ax.bar_label(bars, fontsize=16)
         plt.xlabel("Sites", fontsize=20)
         plt.ylabel("Mean Absolute Error", fontsize=20)
-        plt.title(f"MAE using {model_name} of {HARM_STATUS} sites' data ", fontsize = 20)
+        plt.title(f"MAE using {model_name} of {HARM_STATUS} sites' data ",
+                  fontsize = 20)
         plt.yticks(fontsize=18)
         plt.xticks(fontsize=18, rotation=50)
-        anchored_text = AnchoredText(f"MAE:{mean_s:.3f} \u00B1 {std_s:.3f} [years]",
+        anchored_text = AnchoredText(f"MAE:{np.mean(MAE):.1f} \u00B1 {np.std(MAE):.1f} [years]",
                                      loc=1,
                                      prop=dict(fontweight="bold", size=20),
                                      borderpad=0.,
                                      frameon=True,
                                     )
         ax.add_artist(anchored_text)
-        plt.savefig(f"images/Sites {HARM_STATUS} with {model_name}.png",
+        plt.savefig(f"images_SITE/grid/ Sites {HARM_STATUS} with {model_name}.png",
             dpi=300,
             format="png",
             bbox_inches="tight"
