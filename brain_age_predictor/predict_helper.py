@@ -85,7 +85,8 @@ def residual_plot(true_age1,
                   pred_age1,
                   true_age2,
                   pred_age2,
-                  model_name):
+                  model_name,
+                  harm_flag):
     """
     Computes the difference(delta) between predicted age find with a
     specific model and true age on control test and ASD dataframes.
@@ -107,7 +108,17 @@ def residual_plot(true_age1,
     model_name : string-like
         Name of the model used for prediction.
 
+    harm_flag : boolean.
+        Flag indicating if the dataframe on which prediction was performed
+        has been previously harmonized.
+
     """
+
+    if harm_flag is True:
+        harm_status = "Harmonized"
+    else:
+        harm_status = "Unharmonized"
+
     plt.figure(figsize=(8, 8))
     plt.scatter(true_age1, pred_age1 - true_age1, c="b", label="Control")
     plt.scatter(true_age2, pred_age2 - true_age2, alpha=0.5, c="g", label="ASD")
@@ -136,7 +147,7 @@ def residual_plot(true_age1,
     plt.legend(loc="upper right", fontsize=14)
 
     plt.savefig(
-        f"images/delta_pred_{model_name}.png",
+        f"images/delta_pred_{model_name}_{harm_status}.png",
         dpi=200,
         format="png")
 

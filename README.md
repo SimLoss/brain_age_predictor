@@ -99,24 +99,29 @@ To use these Python codes the following packages are required:
 - **1**) Download the repository from github
 ```git clone https://github.com/Pastiera/brain_age_predictor```
 - **2**) Change directory: ```cd path/to/brain_age_predictor/brain_age_predictor```
-- **3**) Modules brain_age_pred.py, brain_age_site.py, variability.py, preprocess.py are executable following relative help instruction by typing -h on std-out line as positional argument.
-Example:
+- **3**) Modules brain_age_pred.py, brain_age_site.py, variability.py, preprocess.py are executable following relative help instruction by typing -h on std-out line as positional argument or simply 		running them.
+Example of usage (Pipeline1):
 ```
-brain_age_pred.py [-h]
+
+usage: brain_age_pred.py [-h] [-dp DATAPATH] [-grid] [-pred] [-neuroharm] [-verb]
+
+Main module for brain age predictor package.
 
 optional arguments:
   -h, --help            show this help message and exit
   
-  -dp DATAPATH, --datapath DATAPATH
+  -dp,  --datapath DATAPATH
                         Path to the data folder.
-
+  
   -grid, --gridcv       Use GridSearch cross validation to train and fit models.
   
-  -fitgrid, --fitgridcv
-                        Make predictions with pre-trained models with GridSearchCV.
-
+  -pred, --predict      Make predictions with models pre-trained with GridSearchCV.
+  
   -neuroharm, --harmonize
                         Use NeuroHarmonize to harmonize data by provenance site.
+  
+  -verb, --verbose      Set DDN Regressor model's verbosity. If True, it shows model summary.Default = False
+
 
 ```
 

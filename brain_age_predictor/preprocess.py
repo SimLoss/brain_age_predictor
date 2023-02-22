@@ -329,18 +329,21 @@ if __name__ == "__main__":
         action = 'store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
+
     parser.add_argument(
         "-exp",
         "--exploration",
         action = 'store_true',
         help="Shows various informations of the dataframe.",
     )
+
     parser.add_argument(
         "-hist",
         "--histogram",
         type= str,
         help="Plot and save the frequency histogram of the specified feature.",
     )
+
     parser.add_argument(
         "-box",
         "--boxplot",
@@ -348,6 +351,7 @@ if __name__ == "__main__":
         nargs=2,
         help= "Draw and save a box plot to show distributions of two specified feature (e. g. feat_x feat_y). "
     )
+
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 #############################################################

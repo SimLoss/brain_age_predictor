@@ -36,8 +36,9 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import RobustScaler
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest,  f_regression
 from sklearn.pipeline import Pipeline
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 from prettytable import PrettyTable
 
@@ -48,23 +49,11 @@ from preprocess import (read_df,
                         drop_covars)
 from DDNregressor import AgeRegressor
 
-#setting seed for reproducibility
-SEED = 42
-np.random.seed(SEED)
 
 #SCORINGS
 scorings=["neg_mean_absolute_error", "neg_mean_squared_error"]
 
-#MODELS
-models = {
-    "DDNregressor": AgeRegressor(verbose=False),
-    "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(n_estimators=100,
-                                                    max_features='log2',
-                                                    random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-     "SVR": SVR(),
-    }
+
 
 def predict_on_site(x_pred,
                     y_pred,
@@ -156,7 +145,25 @@ if __name__ == '__main__':
         action='store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
+
+    parser.add_argument(
+        "-verb",
+        "--verbose",
+        action='store_true',
+        help="Set DDN Regressor model's verbosity. If True, it shows CV plots and model summary. Default = False"
+        )
+
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+    #MODELS
+    models = {
+        "DDNregressor": AgeRegressor(verbose=args.verbose),
+        "Linear_Regression": LinearRegression(),
+        "Random_Forest_Regressor": RandomForestRegressor(random_state=42),
+        "KNeighborsRegressor": KNeighborsRegressor(),
+         "SVR": SVR(),
+        }
+
     #=============================================================
     # STEP 1: Read the ABIDE dataframe and make some preprocessing.
     #============================================================
@@ -220,26 +227,69 @@ if __name__ == '__main__':
             mae_val = np.array([])
             pr_val = np.array([])
 
-            pipe = Pipeline(
-            steps=[
-                ("Feature", SelectKBest()),
-                ("Scaler", RobustScaler()),
-                ("Model", regressor)
-                ]
-            )
-
-            cv = KFold(n_splits=5, shuffle=True, random_state=SEED)
+            cv = KFold(n_splits=5, shuffle=True, random_state=42)
             for train_index, val_index in cv.split(x, y):
-                model_fit = pipe.fit(x[train_index], y[train_index])
-                predict_y_train = model_fit.predict(x[train_index])
-                y[val_index] = np.squeeze(y[val_index])
-                predict_y_val = model_fit.predict(x[val_index])
+                #here we build a step by step cross-validation for monitoring
+                #overfitting and make use of callbacks for DDNregressor
+                if name_model == "DDNregressor":
+                    #here we scale the train/val set
+                    scaler = RobustScaler()
+                    x[train_index] = scaler.fit_transform(x[train_index])
+                    x[val_index] = scaler.transform(x[val_index])
+                    #selecting the best 20 features
+                    select = SelectKBest(score_func=f_regression, k=30)
+                    select.fit_transform(x[train_index],y[train_index])
+                    select.transform(x[val_index])
 
-                mse_val = np.append(mse_val, mean_squared_error(y[val_index],
-                                                                predict_y_val))
-                mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
-                                                                predict_y_val))
-                pr_val = np.append(pr_val, pearsonr(y[val_index],
+                    callbacks = [EarlyStopping(monitor="val_MAE",
+                                                patience=10,
+                                                verbose=1),
+
+                                ReduceLROnPlateau(monitor='val_MAE',
+                                                  factor=0.1,
+                                                  patience=5,
+                                                  verbose=1)
+                                    ]
+
+                    model_fit = regressor.fit(x[train_index],
+                                              y[train_index],
+                                              call_backs=callbacks,
+                                              val_data=(x[val_index], y[val_index]),
+                                              )
+
+                    y[val_index] = np.squeeze(y[val_index])
+                    predict_y_val = model_fit.predict(x[val_index])
+
+
+
+                    mse_val = np.append(mse_val, mean_squared_error(y[val_index],
+                                                                    predict_y_val))
+                    mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
+                                                                    predict_y_val))
+                    pr_val = np.append(pr_val, pearsonr(y[val_index],
+                                                    predict_y_val)[0])
+
+                    x_test = scaler.transform(x_test)
+                    select.transform(x_test)
+
+                else:
+                    pipe = Pipeline(
+                    steps=[
+                        ("Feature", SelectKBest(score_func=f_regression, k=30)),
+                        ("Scaler", RobustScaler()),
+                        ("Model", regressor)
+                        ]
+                    )
+
+                    model_fit = pipe.fit(x[train_index], y[train_index])
+                    y[val_index] = np.squeeze(y[val_index])
+                    predict_y_val = model_fit.predict(x[val_index])
+
+                    mse_val = np.append(mse_val, mean_squared_error(y[val_index],
+                                                                    predict_y_val))
+                    mae_val = np.append(mae_val, mean_absolute_error(y[val_index],
+                                                                    predict_y_val))
+                    pr_val = np.append(pr_val, pearsonr(y[val_index],
                                                     predict_y_val)[0])
 
             print(f"\nCross-Validation: {name_model} metric scores on validation set.")

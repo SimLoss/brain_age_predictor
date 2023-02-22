@@ -29,18 +29,15 @@ from brain_age_pred import make_predict
 from predict_helper import plot_scores
 from DDNregressor import AgeRegressor
 
-#setting seed for reproducibility
-SEED = 42
 
 ###################################################
 #MODELS
-models = {
-    "DDNregressor": AgeRegressor(),
-    "Linear_Regression": LinearRegression(),
-    "Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
-    }
+models = ["DDNregressor",
+          "Linear_Regression",
+          "Random_Forest_Regressor",
+          "KNeighborsRegressor",
+          "SVR"]
+
 ########################## MAIN
 if __name__ == '__main__':
 

@@ -49,6 +49,7 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
                                  "Feature__score_func": [f_regression],
                                  "Model__dropout_rate": [0.2, 0.3],
                                  "Model__batch_size": [32, 64],
+                                 "Model__epochs": [50, 100, 200]
                                 },
 
                 "Linear_Regression": {"Feature__k": [10, 20, 30],
@@ -60,7 +61,8 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
                                             "Model__n_estimators": [10, 100, 300],
                                             "Model__max_features": ["sqrt", "log2"],
                                             "Model__max_depth": [3, 4, 5, 6],
-                                           },
+                                            "Model__random_state": [42]
+                                            },
 
                "KNeighborsRegressor":{"Feature__k": [10, 20, 30],
                                       "Feature__score_func": [f_regression],
@@ -90,11 +92,11 @@ def model_tuner_cv(dataframe, model, model_name, harm_flag):
         pass
 
     #Pipeline for setting subsequential working steps each time a model is
-    #called on some data. It distinguish between train/test/val set, fitting the
+    #called on some data. It distinguish between train/test set, fitting the
     #first and only transforming the latters.
     pipe = Pipeline(
     steps=[
-        ("Feature", SelectKBest()),
+        ("Feature", SelectKBest(score_func=f_regression)),
         ("Scaler", RobustScaler()),
         ("Model", model)
         ]

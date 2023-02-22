@@ -27,7 +27,7 @@ import pickle
 import argparse
 from time import perf_counter
 
-import tensorflow
+import tensorflow as tf
 import numpy as np
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
@@ -47,18 +47,8 @@ from grid_CV import model_tuner_cv
 from predict_helper import plot_scores, residual_plot
 from DDNregressor import AgeRegressor
 
-#setting SEED for reproducibility
-SEED = 42
-np.random.seed(SEED)
+tf.keras.utils.set_random_seed(42)
 
-#MODELS
-models = {
-    "DDNregressor": AgeRegressor(verbose=True),
-    #"Linear_Regression": LinearRegression(),
-    #"Random_Forest_Regressor": RandomForestRegressor(random_state=SEED),
-    #"KNeighborsRegressor": KNeighborsRegressor(),
-    #"SVR": SVR(),
-    }
 
 def make_predict(dataframe, model_name, harm_flag=False):
     """
@@ -154,11 +144,30 @@ if __name__ == '__main__':
         action='store_true',
         help="Use NeuroHarmonize to harmonize data by provenance site."
         )
+
+    parser.add_argument(
+        "-verb",
+        "--verbose",
+        action='store_true',
+        help="Set DDN Regressor model's verbosity. If True, it shows model summary."
+            "Default = False"
+        )
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+    #MODELS
+    models = {
+        "DDNregressor": AgeRegressor(verbose=args.verbose),
+        "Linear_Regression": LinearRegression(),
+        "Random_Forest_Regressor": RandomForestRegressor(),
+        "KNeighborsRegressor": KNeighborsRegressor(),
+        "SVR": SVR(),
+        }
+
 
     #=============================================================
     # STEP 1: Read the ABIDE dataframe and make some preprocessing.
     #=============================================================
+
     try:
         datapath = args.datapath
         df = read_df(datapath)
@@ -188,7 +197,7 @@ if __name__ == '__main__':
     #split CTR dataset into train and test.
     CTR_train, CTR_test = train_test_split(CTR,
                                            test_size=0.3,
-                                           random_state=SEED)
+                                           random_state=42)
     if NH_FLAG is True:
         CTR_train.attrs['name'] = 'df_CTR_train_Harmonized'
         CTR_test.attrs['name'] = 'df_CTR_test_Harmonized'
@@ -243,12 +252,12 @@ if __name__ == '__main__':
                           pred['df_CTR_test_Harmonized'][1],
                           pred['df_ASD_Harmonized'][0],
                           pred['df_ASD_Harmonized'][1],
-                          name_regressor
-                          )
+                          name_regressor,
+                          NH_FLAG)
         else:
             residual_plot(pred['df_CTR_test_Unharmonized'][0],
                           pred['df_CTR_test_Unharmonized'][1],
                           pred['df_ASD_Unharmonized'][0],
                           pred['df_ASD_Unharmonized'][1],
-                          name_regressor
-                          )
+                          name_regressor,
+                          NH_FLAG)
