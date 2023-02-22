@@ -76,7 +76,7 @@ Typical regression metrics (MAE, MSE) have been evaluated. Pearson correlation c
 
 
 <img src="brain_age_predictor/images_SITE/grid/ Sites NeuroHarmonized with Random_Forest_Regressor.png" width="700"/> 
-<img src=" brain_age_predictor/brain_age_predictor/images/df_CTR_test_Harmonized_Random_Forest_Regressor.png " width="700"/>
+<img src=" brain_age_predictor/images/df_CTR_test_Harmonized_Random_Forest_Regressor.png " width="700"/>
 
 
 # Requirements
